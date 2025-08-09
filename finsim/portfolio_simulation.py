@@ -1,7 +1,7 @@
-"""Portfolio simulation with tax-aware Monte Carlo modeling."""
+"""Portfolio simulation with next-year tax payment (more realistic)."""
 
 import numpy as np
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 from .tax import TaxCalculator
 from .mortality import get_mortality_rates
 
@@ -27,7 +27,7 @@ def simulate_portfolio(
     annuity_guarantee_years: int,
     
     # Consumption
-    net_consumption_need: float,
+    annual_consumption: float,  # Total consumption need (not net)
     
     # Market parameters
     expected_return: float,
@@ -41,19 +41,11 @@ def simulate_portfolio(
     progress_callback: Optional[callable] = None
 ) -> Dict[str, np.ndarray]:
     """
-    Run Monte Carlo simulation of portfolio evolution with taxes.
+    Run Monte Carlo simulation with next-year tax payment.
     
-    Returns dictionary with:
-    - portfolio_paths: (n_simulations, n_years+1) array of portfolio values
-    - failure_year: (n_simulations,) array of year when portfolio depleted
-    - alive_mask: (n_simulations, n_years+1) array of survival status
-    - annuity_income: (n_simulations, n_years) array of annuity payments
-    - dividend_income: (n_simulations, n_years) array of dividend income
-    - capital_gains: (n_simulations, n_years) array of realized capital gains
-    - gross_withdrawals: (n_simulations, n_years) array of gross withdrawals
-    - taxes_paid: (n_simulations, n_years) array of taxes paid
-    - net_withdrawals: (n_simulations, n_years) array of net withdrawals
-    - cost_basis: (n_simulations,) array of final cost basis
+    Key difference: We withdraw exactly what we need for consumption each year,
+    then pay taxes the following year from that year's withdrawal.
+    This is more realistic and avoids circular dependency.
     """
     
     # Initialize tax calculator
@@ -73,7 +65,8 @@ def simulate_portfolio(
     dividend_income = np.zeros((n_simulations, n_years))
     capital_gains = np.zeros((n_simulations, n_years))
     gross_withdrawals = np.zeros((n_simulations, n_years))
-    taxes_paid = np.zeros((n_simulations, n_years))
+    taxes_owed = np.zeros((n_simulations, n_years))  # Taxes calculated this year
+    taxes_paid = np.zeros((n_simulations, n_years))  # Taxes actually paid this year
     net_withdrawals = np.zeros((n_simulations, n_years))
     
     failure_year = np.full(n_simulations, n_years + 1)
@@ -82,8 +75,8 @@ def simulate_portfolio(
     # Track annuity income
     annuity_income = np.zeros((n_simulations, n_years))
     
-    # Track effective tax rates from prior year
-    prior_year_etr = np.ones(n_simulations) * 0.20  # Start with 20% assumption
+    # Track prior year's tax liability (to be paid this year)
+    prior_year_tax_liability = np.zeros(n_simulations)
     
     # Simulate each year
     for year in range(1, n_years + 1):
@@ -119,21 +112,19 @@ def simulate_portfolio(
         active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
         
         # Investment returns - Geometric Brownian Motion (GBM)
-        # The standard model in finance: dS/S = μdt + σdW
-        # For annual steps: S(t+1) = S(t) * exp((μ - σ²/2) + σZ)
-        mu = expected_return / 100  # Convert percentage to decimal
+        mu = expected_return / 100
         sigma = return_volatility / 100
-        
-        # Generate standard normal random variables
         z = np.random.standard_normal(n_simulations)
         
-        # GBM growth factor with volatility drag correction
+        # Cap extreme outliers at 3 standard deviations to prevent numerical issues
+        # This affects < 0.3% of draws and prevents unrealistic 1000x+ growth
+        z = np.clip(z, -3, 3)
+        
         log_returns = (mu - 0.5 * sigma**2) + sigma * z
         growth_factor = np.exp(log_returns)
         
         # Portfolio evolution (only for living people)
         current_portfolio = portfolio_paths[:, year-1]
-        # Only grow portfolios for those still alive
         portfolio_after_growth = np.where(
             alive_mask[:, year],
             current_portfolio * growth_factor,
@@ -144,23 +135,27 @@ def simulate_portfolio(
         dividends = np.where(
             alive_mask[:, year],
             current_portfolio * (dividend_yield / 100),
-            0  # Dead people's estates don't generate dividends
+            0
         )
         dividend_income[:, year-1] = dividends
         
-        # Calculate actual withdrawal needed (only for living)
-        actual_net_need = np.zeros(n_simulations)
-        actual_net_need[active] = np.maximum(0, net_consumption_need - dividends[active])
+        # Calculate withdrawal needed for consumption AND last year's taxes
+        # This is the KEY CHANGE - we pay last year's taxes from this year's withdrawal
+        guaranteed_income = social_security + pension + annuity_income[:, year-1]
+        total_income_available = guaranteed_income + dividends
         
-        # Estimate gross withdrawal using prior year's tax rate
-        actual_gross_withdrawal = np.zeros(n_simulations)
-        actual_gross_withdrawal[active] = actual_net_need[active] / (1 - prior_year_etr[active])
-        actual_gross_withdrawal = np.maximum(0, actual_gross_withdrawal)
+        # What we need to withdraw = consumption + last year's taxes - available income
+        withdrawal_need = np.zeros(n_simulations)
+        withdrawal_need[active] = np.maximum(
+            0,
+            annual_consumption + prior_year_tax_liability[active] - total_income_available[active]
+        )
         
-        # Track withdrawals
+        # This is our actual gross withdrawal (no tax gross-up needed!)
+        actual_gross_withdrawal = withdrawal_need
         gross_withdrawals[:, year-1] = actual_gross_withdrawal
         
-        # Calculate realized capital gains
+        # Calculate realized capital gains for tax purposes
         gain_fraction = np.where(current_portfolio > 0,
                                 np.maximum(0, (current_portfolio - cost_basis) / current_portfolio),
                                 0)
@@ -173,7 +168,7 @@ def simulate_portfolio(
                                       0)
         cost_basis = cost_basis * (1 - withdrawal_fraction)
         
-        # Calculate actual taxes
+        # Calculate taxes owed on THIS YEAR's income (to be paid NEXT year)
         if active.any():
             total_ss_and_pension = social_security + pension + annuity_income[:, year-1]
             ages_array = np.full(n_simulations, age)
@@ -186,19 +181,18 @@ def simulate_portfolio(
                 dividend_income_array=dividends
             )
             
-            taxes_paid[:, year-1] = tax_results['total_tax']
-            
-            # Update effective tax rate for next year
-            total_income = actual_gross_withdrawal + dividends
-            prior_year_etr = np.where(total_income > 0,
-                                      tax_results['total_tax'] / total_income,
-                                      0.20)
-            prior_year_etr = np.clip(prior_year_etr, 0.0, 0.50)
+            # Store tax liability for next year
+            taxes_owed[:, year-1] = tax_results['total_tax']
+            prior_year_tax_liability = tax_results['total_tax'].copy()
         
-        # Net withdrawals after tax
+        # Record taxes actually paid this year (from last year's liability)
+        if year > 1:
+            taxes_paid[:, year-1] = taxes_owed[:, year-2]
+        
+        # Net withdrawals (what's available for consumption after paying last year's taxes)
         net_withdrawals[:, year-1] = actual_gross_withdrawal - taxes_paid[:, year-1]
         
-        # New portfolio value (dividends already used to reduce withdrawals)
+        # New portfolio value
         new_portfolio = portfolio_after_growth - actual_gross_withdrawal
         
         # Check for failures
@@ -226,6 +220,7 @@ def simulate_portfolio(
         'dividend_income': dividend_income,
         'capital_gains': capital_gains,
         'gross_withdrawals': gross_withdrawals,
+        'taxes_owed': taxes_owed,
         'taxes_paid': taxes_paid,
         'net_withdrawals': net_withdrawals,
         'cost_basis': cost_basis

@@ -581,7 +581,7 @@ with tab2:
                 annuity_type=annuity_type,
                 annuity_annual=annuity_annual,
                 annuity_guarantee_years=annuity_guarantee_years,
-                net_consumption_need=net_consumption_need,
+                annual_consumption=annual_consumption,  # Now using total consumption
                 expected_return=expected_return,
                 return_volatility=return_volatility,
                 dividend_yield=dividend_yield,
