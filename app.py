@@ -706,6 +706,68 @@ with tab2:
                 'cost_basis': cost_basis  # Track basis for debugging
             }
             
+            # Save data to disk for debugging
+            import pickle
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            debug_data = {
+                'portfolio_paths': portfolio_paths,
+                'failure_year': failure_year,
+                'percentiles': percentiles,
+                'parameters': {
+                    'n_simulations': n_simulations,
+                    'n_years': n_years,
+                    'initial_portfolio': initial_portfolio,
+                    'current_age': current_age,
+                    'annual_consumption': annual_consumption,
+                    'social_security': social_security,
+                    'expected_return': expected_return,
+                    'return_volatility': return_volatility,
+                    'dividend_yield': dividend_yield,
+                    'state': state
+                }
+            }
+            
+            debug_filename = f"simulation_debug_{timestamp}.pkl"
+            with open(debug_filename, 'wb') as f:
+                pickle.dump(debug_data, f)
+            
+            # Also save summary statistics to text file
+            summary_filename = f"simulation_summary_{timestamp}.txt"
+            with open(summary_filename, 'w') as f:
+                f.write(f"Simulation Summary - {timestamp}\n")
+                f.write("=" * 50 + "\n\n")
+                f.write("Parameters:\n")
+                for key, value in debug_data['parameters'].items():
+                    f.write(f"  {key}: {value}\n")
+                f.write("\n")
+                
+                f.write("Final Portfolio Values (Year 30):\n")
+                final_values = portfolio_paths[:, -1]
+                percentiles_final = np.percentile(final_values, [5, 10, 25, 50, 75, 90, 95, 99, 100])
+                f.write(f"  5th percentile: ${percentiles_final[0]:,.0f}\n")
+                f.write(f"  10th percentile: ${percentiles_final[1]:,.0f}\n")
+                f.write(f"  25th percentile: ${percentiles_final[2]:,.0f}\n")
+                f.write(f"  Median (50th): ${percentiles_final[3]:,.0f}\n")
+                f.write(f"  75th percentile: ${percentiles_final[4]:,.0f}\n")
+                f.write(f"  90th percentile: ${percentiles_final[5]:,.0f}\n")
+                f.write(f"  95th percentile: ${percentiles_final[6]:,.0f}\n")
+                f.write(f"  99th percentile: ${percentiles_final[7]:,.0f}\n")
+                f.write(f"  Maximum: ${percentiles_final[8]:,.0f}\n\n")
+                
+                f.write(f"Success Rate: {success_rate:.1%}\n")
+                f.write(f"Number of simulations > $1B: {np.sum(final_values > 1e9)}\n")
+                f.write(f"Number of simulations > $2B: {np.sum(final_values > 2e9)}\n\n")
+                
+                # Check percentiles over time
+                f.write("95th Percentile Over Time:\n")
+                for year in [0, 5, 10, 15, 20, 25, 30]:
+                    if year <= n_years:
+                        p95 = np.percentile(portfolio_paths[:, year], 95)
+                        f.write(f"  Year {year} (Age {current_age + year}): ${p95:,.0f}\n")
+            
+            st.success(f"✅ Debug data saved to {debug_filename} and {summary_filename}")
+            
             # Debug: Show that dividends do vary
             st.info(f"""
             📊 **Dividend Income Verification** (Median across simulations):
