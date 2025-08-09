@@ -5,6 +5,7 @@ from typing import Dict, Optional
 from scipy import stats
 from .tax import TaxCalculator
 from .mortality import get_mortality_rates
+from .return_generator import ReturnGenerator
 
 
 def simulate_portfolio(
@@ -54,6 +55,14 @@ def simulate_portfolio(
     
     # Get mortality rates if needed
     mortality_rates = get_mortality_rates() if include_mortality else {}
+    
+    # Generate all returns upfront using the return generator
+    # This fixes the bug where returns were getting repeated
+    return_gen = ReturnGenerator(
+        expected_return=expected_return / 100,
+        volatility=return_volatility / 100
+    )
+    growth_factors_matrix = return_gen.generate_returns(n_simulations, n_years)
     
     # Initialize arrays
     portfolio_paths = np.zeros((n_simulations, n_years + 1))
@@ -112,39 +121,8 @@ def simulate_portfolio(
         # Only simulate for those still alive and not failed
         active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
         
-        # Investment returns - Geometric Brownian Motion (GBM)
-        # Use Student-t distribution with 5 degrees of freedom for fatter tails
-        # This better matches empirical stock return distributions
-        mu = expected_return / 100
-        sigma = return_volatility / 100
-        
-        # Generate Student-t distributed random variables
-        # df=5 gives fatter tails than normal but not extreme
-        t_dist = stats.t(df=5)
-        z_raw = t_dist.rvs(size=n_simulations)
-        
-        # Normalize to unit variance (Student-t with df=5 has variance = 5/3)
-        z = z_raw / np.sqrt(5/3)
-        
-        # Cap at 5 standard deviations to prevent numerical overflow
-        # With Student-t, this still allows for realistic extreme events
-        z_clipped = np.clip(z, -5, 5)
-        
-        
-        log_returns = (mu - 0.5 * sigma**2) + sigma * z_clipped
-        growth_factor = np.exp(log_returns)
-        
-        # CRITICAL CHECK: Growth factor should NEVER exceed exp(0.8087) = 2.245
-        max_theoretical_growth = np.exp((mu - 0.5 * sigma**2) + sigma * 5)
-        if np.any(growth_factor > max_theoretical_growth + 0.001):
-            print(f"ERROR in year {year}: Growth factor exceeds theoretical maximum!")
-            print(f"  Max growth factor: {np.max(growth_factor):.4f}")
-            print(f"  Theoretical max: {max_theoretical_growth:.4f}")
-            bad_sims = np.where(growth_factor > max_theoretical_growth + 0.001)[0]
-            print(f"  {len(bad_sims)} simulations exceed max")
-            if len(bad_sims) <= 5:
-                for s in bad_sims:
-                    print(f"    Sim {s}: z={z[s]:.2f}, z_clipped={z_clipped[s]:.2f}, growth={growth_factor[s]:.4f}")
+        # Get pre-generated growth factors for this year
+        growth_factor = growth_factors_matrix[:, year-1]
         
         
         # Portfolio evolution (only for living people)
