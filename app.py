@@ -50,7 +50,7 @@ st.sidebar.header("👤 Demographics")
 
 col1, col2 = st.sidebar.columns(2)
 with col1:
-    current_age = st.number_input("Current Age", 50, 100, 65)
+    current_age = st.number_input("Current Age", 18, 100, 65)
     retirement_age = st.number_input("Retirement Age", current_age, 100, max(current_age, 65))
 with col2:
     max_age = st.number_input("Planning Horizon", current_age + 10, 120, 95)
