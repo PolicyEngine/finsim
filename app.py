@@ -7,7 +7,14 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats
 import warnings
+import logging
+import os
+
+# Suppress warnings
 warnings.filterwarnings('ignore')
+# Suppress PyTorch warnings specifically
+os.environ['PYTORCH_DISABLE_WARNINGS'] = '1'
+logging.getLogger('torch').setLevel(logging.ERROR)
 
 # Import FinSim modules
 from finsim.simulation import SimulationConfig, RetirementSimulation
