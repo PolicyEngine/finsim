@@ -41,8 +41,20 @@ def simulate_portfolio(
     # Tax parameters
     state: str,
     
+    # Spouse parameters (optional)
+    has_spouse: bool = False,
+    spouse_age: int = None,
+    spouse_gender: str = None,
+    spouse_social_security: float = 0,
+    spouse_pension: float = 0,
+    spouse_employment_income: float = 0,
+    spouse_retirement_age: int = None,
+    
     # Progress callback
-    progress_callback: Optional[callable] = None
+    progress_callback: Optional[callable] = None,
+    
+    # Gender for primary person (optional, defaults to Male)
+    gender: str = "Male"
 ) -> Dict[str, np.ndarray]:
     """
     Run Monte Carlo simulation with next-year tax payment.
@@ -53,10 +65,12 @@ def simulate_portfolio(
     """
     
     # Initialize tax calculator
+    filing_status = "JOINT" if has_spouse else "SINGLE"
     tax_calc = TaxCalculator(state=state, year=2025)
     
     # Get mortality rates if needed
-    mortality_rates = get_mortality_rates() if include_mortality else {}
+    mortality_rates = get_mortality_rates(gender) if include_mortality else {}
+    spouse_mortality_rates = get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
     
     # Generate all returns upfront using the return generator
     # This fixes the bug where returns were getting repeated
@@ -83,6 +97,7 @@ def simulate_portfolio(
     
     failure_year = np.full(n_simulations, n_years + 1)
     alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool)
+    spouse_alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool) if has_spouse else None
     
     # Track annuity income
     annuity_income = np.zeros((n_simulations, n_years))
@@ -119,6 +134,13 @@ def simulate_portfolio(
             mort_rate = mortality_rates.get(age, 0)
             death_this_year = np.random.random(n_simulations) < mort_rate
             alive_mask[death_this_year, year:] = False
+            
+            # Spouse mortality
+            if has_spouse:
+                spouse_current_age = spouse_age + year
+                spouse_mort_rate = spouse_mortality_rates.get(spouse_current_age, 0)
+                spouse_death_this_year = np.random.random(n_simulations) < spouse_mort_rate
+                spouse_alive_mask[spouse_death_this_year, year:] = False
         
         # Only simulate for those still alive and not failed
         active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
@@ -149,7 +171,24 @@ def simulate_portfolio(
         # Employment income (stops at retirement age)
         wages = employment_income if age < retirement_age else 0
         
-        guaranteed_income = social_security + pension + annuity_income[:, year-1] + wages
+        # Spouse income if applicable
+        spouse_wages = np.zeros(n_simulations)
+        spouse_ss = np.zeros(n_simulations)
+        spouse_pens = np.zeros(n_simulations)
+        if has_spouse:
+            spouse_current_age = spouse_age + year
+            # Spouse employment income (only if alive and working)
+            if spouse_current_age < spouse_retirement_age:
+                spouse_wages = np.where(spouse_alive_mask[:, year], spouse_employment_income, 0)
+            # Spouse SS and pension (only if alive)
+            spouse_ss = np.where(spouse_alive_mask[:, year], spouse_social_security, 0)
+            spouse_pens = np.where(spouse_alive_mask[:, year], spouse_pension, 0)
+        
+        # Total household income
+        total_employment = wages + spouse_wages
+        total_ss_pension = social_security + pension + spouse_ss + spouse_pens
+        
+        guaranteed_income = total_ss_pension + annuity_income[:, year-1] + total_employment
         total_income_available = guaranteed_income + dividends
         
         # What we need to withdraw = consumption + last year's taxes - available income
@@ -178,17 +217,18 @@ def simulate_portfolio(
         
         # Calculate taxes owed on THIS YEAR's income (to be paid NEXT year)
         if active.any():
-            total_ss_and_pension = social_security + pension + annuity_income[:, year-1]
+            # Combine all SS and pension income for household
+            total_ss_and_pension = total_ss_pension + annuity_income[:, year-1]
             ages_array = np.full(n_simulations, age)
             
-            # Employment income for tax calculation
-            employment_income_array = np.full(n_simulations, wages)
+            # Employment income for tax calculation (household total)
+            employment_income_array = np.full(n_simulations, total_employment)
             
             tax_results = tax_calc.calculate_batch_taxes(
                 capital_gains_array=realized_gains,
                 social_security_array=total_ss_and_pension,
                 ages=ages_array,
-                filing_status="SINGLE",
+                filing_status=filing_status,
                 dividend_income_array=dividends,
                 employment_income_array=employment_income_array
             )

@@ -56,6 +56,29 @@ with col2:
     max_age = st.number_input("Planning Horizon", current_age + 10, 120, 95)
     gender = st.selectbox("Gender (for mortality)", ["Male", "Female"])
 
+# Spouse option
+has_spouse = st.sidebar.checkbox(
+    "Include Spouse",
+    value=False,
+    help="Model a married couple (files jointly for taxes)"
+)
+
+spouse_age = current_age
+spouse_gender = "Female" if gender == "Male" else "Male"
+spouse_employment_income = 0
+spouse_social_security = 0
+spouse_pension = 0
+spouse_retirement_age = retirement_age
+
+if has_spouse:
+    st.sidebar.markdown("**Spouse Details**")
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        spouse_age = st.number_input("Spouse Age", 18, 100, current_age)
+    with col2:
+        spouse_gender = st.selectbox("Spouse Gender", ["Male", "Female"], 
+                                    index=1 if gender == "Male" else 0)
+
 # State for tax calculations
 state = st.sidebar.selectbox(
     "State (for taxes)",
@@ -93,9 +116,12 @@ fund_ticker = st.sidebar.text_input(
 
 st.sidebar.header("🏦 Income Sources")
 
-# Employment income
+# Primary person's income
+if has_spouse:
+    st.sidebar.markdown("**Your Income**")
+
 employment_income = st.sidebar.number_input(
-    "Annual Employment Income ($)",
+    "Annual Employment Income ($)" if not has_spouse else "Your Employment Income ($)",
     min_value=0,
     value=0,
     step=5_000,
@@ -105,7 +131,7 @@ employment_income = st.sidebar.number_input(
 
 if employment_income > 0:
     retirement_age = st.sidebar.slider(
-        "Retirement Age",
+        "Your Retirement Age" if has_spouse else "Retirement Age",
         min_value=50,
         max_value=75,
         value=65,
@@ -115,7 +141,7 @@ else:
     retirement_age = current_age  # No retirement if no employment income
 
 social_security = st.sidebar.number_input(
-    "Annual Social Security ($)",
+    "Annual Social Security ($)" if not has_spouse else "Your Social Security ($)",
     min_value=0,
     value=24_000,
     step=1_000,
@@ -124,13 +150,55 @@ social_security = st.sidebar.number_input(
 )
 
 pension = st.sidebar.number_input(
-    "Annual Pension/Other Income ($)",
+    "Annual Pension/Other Income ($)" if not has_spouse else "Your Pension ($)",
     min_value=0,
     value=0,
     step=1_000,
     format="%d",
     help="Other guaranteed annual income (in today's dollars)"
 )
+
+# Spouse's income
+if has_spouse:
+    st.sidebar.markdown("**Spouse's Income**")
+    
+    spouse_employment_income = st.sidebar.number_input(
+        "Spouse Employment Income ($)",
+        min_value=0,
+        value=0,
+        step=5_000,
+        format="%d",
+        help="Spouse's annual wages and salaries"
+    )
+    
+    if spouse_employment_income > 0:
+        spouse_retirement_age = st.sidebar.slider(
+            "Spouse Retirement Age",
+            min_value=50,
+            max_value=75,
+            value=65,
+            help="Age when spouse's employment income stops"
+        )
+    else:
+        spouse_retirement_age = spouse_age
+    
+    spouse_social_security = st.sidebar.number_input(
+        "Spouse Social Security ($)",
+        min_value=0,
+        value=0,
+        step=1_000,
+        format="%d",
+        help="Spouse's annual Social Security benefits"
+    )
+    
+    spouse_pension = st.sidebar.number_input(
+        "Spouse Pension ($)",
+        min_value=0,
+        value=0,
+        step=1_000,
+        format="%d",
+        help="Spouse's other guaranteed annual income"
+    )
 
 # Annuity option
 has_annuity = st.sidebar.checkbox(
@@ -502,14 +570,62 @@ with tab1:
             fig_mortality.add_trace(go.Scatter(
                 x=ages, y=survival_probs,
                 mode='lines',
-                name='Survival Probability'
+                name=f'Your Survival ({gender})',
+                line=dict(color='blue')
             ))
+            
+            # Add spouse survival if applicable
+            if has_spouse:
+                spouse_mortality_rates = get_mortality_rates(spouse_gender)
+                spouse_ages = list(range(spouse_age, min(max_age + 1, 101)))
+                spouse_survival_probs = []
+                spouse_cumulative_survival = 1.0
+                
+                for age in spouse_ages:
+                    mort_rate = np.interp(age, list(spouse_mortality_rates.keys()), 
+                                        list(spouse_mortality_rates.values()))
+                    spouse_cumulative_survival *= (1 - mort_rate)
+                    spouse_survival_probs.append(spouse_cumulative_survival)
+                
+                # Align to same x-axis (years from now)
+                years_from_now = list(range(len(spouse_ages)))
+                fig_mortality.add_trace(go.Scatter(
+                    x=spouse_ages, y=spouse_survival_probs,
+                    mode='lines',
+                    name=f'Spouse Survival ({spouse_gender})',
+                    line=dict(color='red', dash='dash')
+                ))
+                
+                # Add joint survival (both alive)
+                # Need to align the ages properly
+                joint_survival = []
+                for i, age in enumerate(ages):
+                    spouse_age_at_time = spouse_age + i
+                    if i < len(survival_probs) and spouse_age_at_time <= 100:
+                        spouse_surv = np.interp(spouse_age_at_time, 
+                                               list(spouse_mortality_rates.keys()),
+                                               [1.0] + spouse_survival_probs[:len(spouse_survival_probs)-1])
+                        if i < len(spouse_survival_probs):
+                            spouse_surv = spouse_survival_probs[i]
+                        else:
+                            spouse_surv = 0
+                        joint_survival.append(survival_probs[i] * spouse_surv)
+                
+                if joint_survival:
+                    fig_mortality.add_trace(go.Scatter(
+                        x=ages[:len(joint_survival)], y=joint_survival,
+                        mode='lines',
+                        name='Both Survive',
+                        line=dict(color='green', dash='dot')
+                    ))
+            
             fig_mortality.update_layout(
                 title="Survival Probability by Age",
                 xaxis_title="Age",
                 yaxis_title="Probability of Survival",
                 height=300,
-                yaxis_tickformat='.0%'
+                yaxis_tickformat='.0%',
+                showlegend=has_spouse
             )
             st.plotly_chart(fig_mortality, use_container_width=True)
         else:
@@ -518,16 +634,44 @@ with tab1:
     st.subheader("📊 Cash Flow Model")
     
     years_to_simulate = max_age - current_age
-    guaranteed_income = social_security + pension + annuity_annual
-    net_consumption_need = annual_consumption - guaranteed_income
+    
+    # Calculate household income
+    your_income = social_security + pension
+    household_guaranteed = your_income + annuity_annual
+    if has_spouse:
+        spouse_income = spouse_social_security + spouse_pension
+        household_guaranteed += spouse_income
+    
+    net_consumption_need = annual_consumption - household_guaranteed
+    
+    # Display household information
+    if has_spouse:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"""
+            **Your Income (Annual)**
+            - Employment: ${employment_income:,} (until age {retirement_age})
+            - Social Security: ${social_security:,}
+            - Pension: ${pension:,}
+            - **Your Total**: ${your_income + employment_income:,}
+            """)
+        with col2:
+            st.write(f"""
+            **Spouse Income (Annual)**
+            - Employment: ${spouse_employment_income:,} (until age {spouse_retirement_age})
+            - Social Security: ${spouse_social_security:,}
+            - Pension: ${spouse_pension:,}
+            - **Spouse Total**: ${spouse_income + spouse_employment_income:,}
+            """)
     
     st.write(f"""
-    **Annual Cash Flows (Real $)**
+    **Household Cash Flows (Real $)**
     - Consumption Need: ${annual_consumption:,}
-    - Guaranteed Income: ${guaranteed_income:,}
+    - Household Guaranteed Income: ${household_guaranteed:,}
     - **Net from Portfolio**: ${net_consumption_need:,}
-    - Tax Calculation: PolicyEngine-US (federal + state)
-    - **Estimated Gross Withdrawal**: ~${net_consumption_need * 1.25:,.0f} (before taxes)
+    - Tax Filing Status: {"Married Filing Jointly" if has_spouse else "Single"}
+    - Tax Calculation: PolicyEngine-US (federal + {state} state)
+    - **Estimated Gross Withdrawal**: ~${max(0, net_consumption_need * 1.25):,.0f} (before taxes)
     """)
     
     if net_consumption_need <= 0:
@@ -619,6 +763,14 @@ with tab2:
                 return_volatility=return_volatility,
                 dividend_yield=dividend_yield,
                 state=state,
+                gender=gender,
+                has_spouse=has_spouse,
+                spouse_age=spouse_age,
+                spouse_gender=spouse_gender,
+                spouse_social_security=spouse_social_security,
+                spouse_pension=spouse_pension,
+                spouse_employment_income=spouse_employment_income,
+                spouse_retirement_age=spouse_retirement_age,
                 progress_callback=update_progress
             )
             
