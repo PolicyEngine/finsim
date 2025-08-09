@@ -1,4 +1,4 @@
-"""General retirement planning simulator with clear assumptions."""
+"""FinSim retirement planning simulator using modular package structure."""
 
 import streamlit as st
 import numpy as np
@@ -9,7 +9,12 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-from finsim.mortality import get_mortality_rates
+# Import FinSim modules
+from finsim.simulation import SimulationConfig, RetirementSimulation
+from finsim.mortality import get_mortality_rates, calculate_survival_curve
+from finsim.market import MarketDataFetcher
+from finsim.tax import TaxCalculator
+from finsim.portfolio_simulation import simulate_portfolio
 
 # Configure page
 st.set_page_config(
@@ -22,10 +27,19 @@ st.title("💰 FinSim by PolicyEngine")
 st.markdown("""
 Financial simulator for retirement planning using Monte Carlo methods with real market data calibration.
 All calculations are in **real (inflation-adjusted) terms** and performed **yearly**.
+Tax calculations powered by PolicyEngine-US for accurate federal and state tax modeling.
 """)
 
 # Sidebar for inputs
-st.sidebar.header("🎯 Your Situation")
+# Add PolicyEngine logo at top of sidebar (centered)
+col1, col2, col3 = st.sidebar.columns([1, 2, 1])
+with col2:
+    try:
+        st.image("policyengine_logo.png", width=150)
+    except:
+        pass  # Logo file not found
+
+st.sidebar.header("👤 Demographics")
 
 col1, col2 = st.sidebar.columns(2)
 with col1:
@@ -35,7 +49,25 @@ with col2:
     max_age = st.number_input("Planning Horizon", current_age + 10, 120, 95)
     gender = st.selectbox("Gender (for mortality)", ["Male", "Female"])
 
-st.sidebar.header("💰 Financial Position")
+# State for tax calculations
+state = st.sidebar.selectbox(
+    "State (for taxes)",
+    ["CA", "NY", "TX", "FL", "WA", "IL", "PA", "OH", "GA", "NC", "MI", "NJ", "VA", "MA", "AZ", "IN", "TN", "MO", "MD", "WI", "MN", "CO", "AL", "SC", "LA", "KY", "OR", "OK", "CT", "UT", "IA", "NV", "AR", "MS", "KS", "NM", "NE", "WV", "ID", "HI", "NH", "ME", "RI", "MT", "DE", "SD", "ND", "AK", "DC", "VT", "WY"],
+    index=0,  # Default to CA
+    help="State of residence for tax calculations"
+)
+
+st.sidebar.header("💸 Annual Consumption")
+annual_consumption = st.sidebar.number_input(
+    "Annual Spending Need ($)",
+    min_value=0,
+    value=60_000,
+    step=5_000,
+    format="%d",
+    help="How much you need to spend each year (in today's dollars, real terms)"
+)
+
+st.sidebar.header("💰 Assets & Market")
 initial_portfolio = st.sidebar.number_input(
     "Current Portfolio Value ($)",
     min_value=0,
@@ -45,16 +77,14 @@ initial_portfolio = st.sidebar.number_input(
     help="Current value of investable assets (stocks, bonds, etc.)"
 )
 
-st.sidebar.header("💸 Annual Spending & Income")
-annual_consumption = st.sidebar.number_input(
-    "Annual Real Consumption Need ($)",
-    min_value=0,
-    value=60_000,
-    step=5_000,
-    format="%d",
-    help="How much you need to spend each year (in today's dollars)"
+# Fund ticker in the same section as portfolio
+fund_ticker = st.sidebar.text_input(
+    "Index Fund Ticker",
+    value="VT",
+    help="Common funds: VT (2008+), VOO (2010+), SPY (1993+), QQQ (1999+), VTI (2001+)"
 )
 
+st.sidebar.header("🏦 Income Sources")
 social_security = st.sidebar.number_input(
     "Annual Social Security ($)",
     min_value=0,
@@ -74,7 +104,6 @@ pension = st.sidebar.number_input(
 )
 
 # Annuity option
-st.sidebar.subheader("🏦 Annuity Option")
 has_annuity = st.sidebar.checkbox(
     "Include Annuity Income",
     value=False,
@@ -126,126 +155,134 @@ if has_annuity:
     
     st.sidebar.info(f"Annual annuity income: ${annuity_annual:,}")
 
-st.sidebar.header("📈 Market Assumptions")
+# Market calibration section
+st.sidebar.header("📊 Market Calibration")
+
+# Market calibration options
 st.sidebar.markdown("*All returns are real (after inflation)*")
 
-# Option to calibrate to specific funds
-calibration_method = st.sidebar.radio(
-    "Calibration Method",
-    ["Manual", "Historical Fund Data"],
-    help="Manual: Set your own assumptions\nHistorical: Calibrate to actual fund performance"
+use_all_data = st.sidebar.checkbox(
+    "Use all available data",
+    value=True,
+    help="Use all available historical data for the selected fund"
 )
 
-if calibration_method == "Historical Fund Data":
-    fund_ticker = st.sidebar.text_input(
-        "Fund Ticker",
-        value="VT",
-        help="Enter ticker symbol (e.g., VT, VOO, SPY, QQQ)"
-    )
-    
+if not use_all_data:
     lookback_years = st.sidebar.slider(
         "Years of History",
-        3, 20, 10,
+        3, 50, 10,
         help="How many years of historical data to use"
     )
-    
-    if st.sidebar.button("📊 Fetch & Calibrate"):
-        with st.spinner(f"Fetching {fund_ticker} data..."):
-            try:
-                import yfinance as yf
-                from datetime import datetime, timedelta
-                
-                # Fetch historical data
-                ticker = yf.Ticker(fund_ticker)
-                end_date = datetime.now()
+else:
+    lookback_years = 50  # Maximum lookback for "all available"
+
+# Auto-fetch on load or when ticker/years change
+cache_key = f"market_data_{fund_ticker}_{'all' if use_all_data else lookback_years}"
+if cache_key not in st.session_state:
+    with st.spinner(f"Fetching {fund_ticker} data..."):
+        try:
+            import yfinance as yf
+            from datetime import datetime, timedelta
+            
+            # Fetch historical data
+            ticker = yf.Ticker(fund_ticker)
+            end_date = datetime.now()
+            # If using all data, try to get maximum history
+            if use_all_data:
+                start_date = end_date - timedelta(days=365 * 50)  # Try 50 years back
+            else:
                 start_date = end_date - timedelta(days=365 * lookback_years)
+            
+            hist = ticker.history(start=start_date, end=end_date, interval="1d")
+            
+            if not hist.empty:
+                # Check actual data availability
+                actual_years = (hist.index[-1] - hist.index[0]).days / 365.25
                 
-                hist = ticker.history(start=start_date, end=end_date, interval="1d")
+                # Calculate PRICE returns only (not including dividends)
+                hist['Price_Return'] = hist['Close'].pct_change()
                 
-                if not hist.empty:
-                    # Calculate returns
-                    hist['Returns'] = hist['Close'].pct_change()
-                    annual_returns = (1 + hist['Returns']).resample('Y').prod() - 1
-                    
-                    # Adjust for inflation (approximate using 2.5% average)
-                    inflation_rate = 0.025
-                    real_returns = annual_returns - inflation_rate
-                    
-                    # Calculate statistics
-                    mean_return = real_returns.mean() * 100
-                    volatility = real_returns.std() * 100
-                    
-                    # Get current dividend yield
-                    info = ticker.info
-                    current_div_yield = info.get('dividendYield', 0.02) * 100
-                    
-                    st.sidebar.success(f"""
-                    ✅ **{fund_ticker} Historical Stats** ({lookback_years}Y)
-                    - Real Return: {mean_return:.1f}%
-                    - Volatility: {volatility:.1f}%
-                    - Dividend Yield: {current_div_yield:.1f}%
-                    """)
-                    
-                    # Store in session state
-                    st.session_state['calibrated_return'] = mean_return
-                    st.session_state['calibrated_volatility'] = volatility
-                    st.session_state['calibrated_dividend'] = current_div_yield
-                    
-            except Exception as e:
-                st.sidebar.error(f"Error fetching data: {str(e)}")
-                st.sidebar.info("Using default values")
-    
-    # Use calibrated or default values
+                # Annual price returns
+                annual_price_returns = (1 + hist['Price_Return']).resample('Y').prod() - 1
+                
+                # Adjust for inflation (approximate using 2.5% average)
+                inflation_rate = 0.025
+                real_price_returns = annual_price_returns - inflation_rate
+                
+                # Calculate statistics for price appreciation only
+                mean_price_return = real_price_returns.mean() * 100
+                volatility = real_price_returns.std() * 100
+                
+                # Get current dividend yield (fix the scaling issue)
+                info = ticker.info
+                div_yield_raw = info.get('dividendYield', 0.02)
+                # dividendYield is already in decimal form (e.g., 0.0175 for 1.75%)
+                current_div_yield = div_yield_raw * 100 if div_yield_raw < 1 else div_yield_raw
+                
+                # Store in session state with cache key
+                st.session_state[cache_key] = {
+                    'return': mean_price_return,  # Price appreciation only
+                    'volatility': volatility,
+                    'dividend': current_div_yield
+                }
+                
+                # Total return for display
+                total_return = mean_price_return + current_div_yield
+                
+                years_display = f"{actual_years:.1f}"
+                
+                st.sidebar.success(f"""
+                ✅ **{fund_ticker} Historical Stats** ({years_display}Y available)
+                - Price Return: {mean_price_return:.1f}%
+                - Dividend Yield: {current_div_yield:.1f}%
+                - Total Return: {total_return:.1f}%
+                - Volatility: {volatility:.1f}%
+                """)
+                
+        except Exception as e:
+            st.sidebar.error(f"Error fetching data: {str(e)}")
+            # Use sensible defaults
+            st.session_state[cache_key] = {
+                'return': 5.0,
+                'volatility': 16.0,
+                'dividend': 2.0
+            }
+
+# Get cached values
+cached_data = st.session_state.get(cache_key, {'return': 5.0, 'volatility': 16.0, 'dividend': 2.0})
+
+# Manual override option
+manual_override = st.sidebar.checkbox("Manual Override", value=False, help="Override with custom values")
+
+if manual_override:
     expected_return = st.sidebar.slider(
         "Expected Real Return (%)",
         0.0, 10.0, 
-        st.session_state.get('calibrated_return', 5.0),
+        cached_data['return'],  # Default to calibrated value
         0.5,
-        help="Calibrated from historical data"
+        help="Override the calibrated return"
     )
     
     return_volatility = st.sidebar.slider(
         "Return Volatility (%)",
-        5.0, 30.0,
-        st.session_state.get('calibrated_volatility', 16.0),
+        5.0, 30.0, 
+        cached_data['volatility'],  # Default to calibrated value
         1.0,
-        help="Calibrated from historical data"
+        help="Override the calibrated volatility"
     )
     
     dividend_yield = st.sidebar.slider(
         "Dividend Yield (%)",
-        0.0, 5.0,
-        st.session_state.get('calibrated_dividend', 2.0),
+        0.0, 5.0, 
+        min(cached_data['dividend'], 5.0),  # Cap at 5% to avoid display issues
         0.25,
-        help="Current dividend yield"
+        help="Override the calibrated dividend yield"
     )
-    
-else:  # Manual
-    st.sidebar.info("""
-    **Typical Values:**
-    - VT (Total World): 5% real, 16% vol
-    - S&P 500: 7% real, 16% vol
-    - Bonds: 2% real, 5% vol
-    - 60/40 Portfolio: 5% real, 10% vol
-    """)
-    
-    expected_return = st.sidebar.slider(
-        "Expected Real Return (%)",
-        0.0, 10.0, 5.0, 0.5,
-        help="Historical equity premium suggests 5-7% real returns"
-    )
-    
-    return_volatility = st.sidebar.slider(
-        "Return Volatility (%)",
-        5.0, 30.0, 16.0, 1.0,
-        help="Historical volatility ~16% for diversified equity"
-    )
-    
-    dividend_yield = st.sidebar.slider(
-        "Dividend Yield (%)",
-        0.0, 5.0, 2.0, 0.25,
-        help="Current dividend yield"
-    )
+else:
+    # Use auto-calibrated values
+    expected_return = cached_data['return']
+    return_volatility = cached_data['volatility']
+    dividend_yield = min(cached_data['dividend'], 5.0)  # Cap at reasonable value
 
 st.sidebar.header("🎲 Simulation Settings")
 n_simulations = st.sidebar.selectbox(
@@ -260,13 +297,7 @@ include_mortality = st.sidebar.checkbox(
     help="Account for probability of death each year"
 )
 
-# Tax assumptions (simplified)
-st.sidebar.header("📋 Tax Assumptions")
-effective_tax_rate = st.sidebar.slider(
-    "Effective Tax Rate on Withdrawals (%)",
-    0.0, 40.0, 15.0, 1.0,
-    help="Combined federal and state tax rate on portfolio withdrawals"
-)
+# PolicyEngine will calculate accurate taxes based on state
 
 # Main content area
 tab1, tab2, tab3, tab4 = st.tabs(["📖 Assumptions", "📊 Results", "📈 Detailed Analysis", "🎯 Strategy"])
@@ -310,84 +341,74 @@ with tab1:
             st.info("Mortality risk disabled")
     
     with col2:
-        st.markdown("**💵 Dividend Yield**")
-        years_preview = np.arange(0, min(30, max_age - current_age + 1))
-        # Show how dividend income changes with portfolio value
-        sample_portfolio = initial_portfolio * np.exp(expected_return/100 * years_preview)
-        dividend_preview = sample_portfolio * (dividend_yield / 100)
+        st.markdown(f"**📊 {fund_ticker} Historical Data**")
         
-        fig_div_preview = go.Figure()
-        fig_div_preview.add_trace(go.Scatter(
-            x=current_age + years_preview, 
-            y=dividend_preview,
-            mode='lines',
-            name='Expected Dividend Income',
-            line=dict(color='green')
-        ))
-        fig_div_preview.update_layout(
-            xaxis_title="Age",
-            yaxis_title="Annual Dividends ($)",
-            height=200,
-            margin=dict(l=0, r=0, t=20, b=20)
-        )
-        st.plotly_chart(fig_div_preview, use_container_width=True)
-        st.caption(f"At {dividend_yield:.1f}% yield on growing portfolio")
+        # Try to show actual historical performance
+        try:
+            import yfinance as yf
+            from datetime import datetime, timedelta
+            
+            # Get 5 years of data for display
+            ticker = yf.Ticker(fund_ticker)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=365 * 5)
+            hist_display = ticker.history(start=start_date, end=end_date, interval="1mo")
+            
+            if not hist_display.empty:
+                # Normalize to $100 starting value
+                normalized_price = 100 * hist_display['Close'] / hist_display['Close'].iloc[0]
+                
+                fig_hist = go.Figure()
+                fig_hist.add_trace(go.Scatter(
+                    x=hist_display.index,
+                    y=normalized_price,
+                    mode='lines',
+                    name=f'{fund_ticker} Price',
+                    line=dict(color='green', width=2)
+                ))
+                fig_hist.update_layout(
+                    xaxis_title="Date",
+                    yaxis_title="Value of $100",
+                    height=200,
+                    margin=dict(l=0, r=0, t=20, b=20),
+                    showlegend=False
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
+                st.caption(f"Total return: {expected_return:.1f}% (includes dividends)")
+            else:
+                st.info(f"No historical data for {fund_ticker}")
+        except:
+            st.info(f"Unable to fetch {fund_ticker} history")
     
     with col3:
-        st.markdown("**📈 Fund Value Projection**")
-        # Show expected fund value with confidence bands
-        years_preview = np.arange(0, min(30, max_age - current_age + 1))
+        st.markdown("**📈 Return Distribution**")
         
-        # Calculate expected value and confidence bands
-        expected_value = initial_portfolio * np.exp(expected_return/100 * years_preview)
+        # Show return distribution (not projections)
+        x = np.linspace(-30, 30, 200)
+        y = stats.norm.pdf(x, expected_return, return_volatility)
         
-        # Standard deviation grows with sqrt(time)
-        std_dev = initial_portfolio * np.exp(expected_return/100 * years_preview) * \
-                  (np.exp(return_volatility/100 * np.sqrt(years_preview)) - 1)
-        
-        upper_band = expected_value + std_dev
-        lower_band = np.maximum(0, expected_value - std_dev)
-        
-        fig_fund_preview = go.Figure()
-        
-        # Add confidence band
-        fig_fund_preview.add_trace(go.Scatter(
-            x=current_age + years_preview,
-            y=upper_band,
-            mode='lines',
-            name='±1σ Band',
-            line=dict(width=0),
-            showlegend=False
+        fig_return_dist = go.Figure()
+        fig_return_dist.add_trace(go.Scatter(
+            x=x, y=y,
+            fill='tozeroy',
+            name='Return Distribution',
+            line=dict(color='blue')
         ))
-        fig_fund_preview.add_trace(go.Scatter(
-            x=current_age + years_preview,
-            y=lower_band,
-            mode='lines',
-            name='±1σ Band',
-            line=dict(width=0),
-            fillcolor='rgba(68, 68, 68, 0.2)',
-            fill='tonexty',
-            showlegend=False
-        ))
-        
-        # Add expected value
-        fig_fund_preview.add_trace(go.Scatter(
-            x=current_age + years_preview,
-            y=expected_value,
-            mode='lines',
-            name='Expected Value',
-            line=dict(color='blue', width=2)
-        ))
-        
-        fig_fund_preview.update_layout(
-            xaxis_title="Age",
-            yaxis_title="Portfolio Value ($)",
+        fig_return_dist.add_vline(
+            x=expected_return, 
+            line_dash="dash", 
+            line_color="darkblue",
+            annotation_text=f"Expected: {expected_return:.1f}%"
+        )
+        fig_return_dist.update_layout(
+            xaxis_title="Annual Return (%)",
+            yaxis_title="Probability Density",
             height=200,
             margin=dict(l=0, r=0, t=20, b=20),
             showlegend=False
         )
-        st.plotly_chart(fig_fund_preview, use_container_width=True)
-        st.caption(f"{expected_return:.1f}% return, {return_volatility:.1f}% volatility")
+        st.plotly_chart(fig_return_dist, use_container_width=True)
+        st.caption(f"μ={expected_return:.1f}%, σ={return_volatility:.1f}%, div={dividend_yield:.1f}%")
     
     st.markdown("---")
     
@@ -397,15 +418,19 @@ with tab1:
         st.subheader("🎲 Portfolio Returns")
         
         st.write(f"""
-        - **Model**: Geometric Brownian Motion (GBM)
-        - **Mathematical Form**: dS/S = μdt + σdW
-        - **Expected Return (μ)**: {expected_return:.1f}% real per year
+        - **Model**: Geometric Brownian Motion (GBM) for price
+        - **Price dynamics**: dS/S = μdt + σdW
+        - **Price Return (μ)**: {expected_return:.1f}% real per year
         - **Volatility (σ)**: {return_volatility:.1f}% annual standard deviation
-        - **Dividends**: {dividend_yield:.1f}% paid annually
+        - **Dividend Yield**: {dividend_yield:.1f}% paid as cash
+        
+        The fund price follows GBM. Dividends are paid separately as cash.
+        Total return = Price appreciation + Dividend yield
         """)
         
-        if calibration_method == "Historical Fund Data" and 'calibrated_return' in st.session_state:
-            st.info(f"📊 Calibrated to {fund_ticker} using {lookback_years} years of data")
+        if not manual_override:
+            years_msg = f"{actual_years:.1f}" if 'actual_years' in locals() else "all available"
+            st.info(f"📊 Calibrated to {fund_ticker} using {years_msg} years of data")
         
         # Show return distribution
         x = np.linspace(-30, 50, 100)
@@ -472,150 +497,109 @@ with tab1:
     - Consumption Need: ${annual_consumption:,}
     - Guaranteed Income: ${guaranteed_income:,}
     - **Net from Portfolio**: ${net_consumption_need:,}
-    - Tax Rate on Withdrawals: {effective_tax_rate:.1f}%
-    - **Gross Withdrawal Needed**: ${net_consumption_need / (1 - effective_tax_rate/100):,.0f}
+    - Tax Calculation: PolicyEngine-US (federal + state)
+    - **Estimated Gross Withdrawal**: ~${net_consumption_need * 1.25:,.0f} (before taxes)
     """)
     
     if net_consumption_need <= 0:
         st.success("✅ Your guaranteed income covers your consumption needs!")
     else:
-        withdrawal_rate = (net_consumption_need / (1 - effective_tax_rate/100)) / initial_portfolio * 100
+        withdrawal_rate = (net_consumption_need * 1.25) / initial_portfolio * 100  # Rough estimate before tax calc
         st.info(f"📊 Initial withdrawal rate: {withdrawal_rate:.2f}%")
+    
+    # Add simulation button in tab1
+    st.markdown("---")
+    st.info("💡 Click 'Run Simulation' to generate results, then check the **Results** tab")
+    if st.button("🎲 Run Simulation", type="primary", key="run_sim"):
+        st.session_state.simulation_run = True
+        st.rerun()  # Force rerun to update tab2
 
 with tab2:
     st.header("Simulation Results")
     
-    if st.button("🎲 Run Simulation", type="primary"):
-        with st.spinner(f"Running {n_simulations:,} simulations..."):
+    if 'simulation_run' not in st.session_state or not st.session_state.simulation_run:
+        st.info("👈 Please run a simulation from the Assumptions tab first")
+    else:
+        # Create progress containers
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # Run Monte Carlo simulation
+        n_years = max_age - current_age
+        
+        with st.container():
+            # Create a placeholder for live results
+            live_chart_placeholder = st.empty()
             
-            # Run Monte Carlo simulation
-            n_years = max_age - current_age
-            
-            # Initialize arrays
-            portfolio_paths = np.zeros((n_simulations, n_years + 1))
-            portfolio_paths[:, 0] = initial_portfolio
-            
-            # Track cost basis for capital gains calculations
-            cost_basis = np.full(n_simulations, initial_portfolio)  # Initial basis
-            
-            # Track components for analysis
-            dividend_income = np.zeros((n_simulations, n_years))
-            capital_gains = np.zeros((n_simulations, n_years))  # Now tracks REALIZED gains
-            gross_withdrawals = np.zeros((n_simulations, n_years))
-            taxes_paid = np.zeros((n_simulations, n_years))
-            net_withdrawals = np.zeros((n_simulations, n_years))
-            
-            failure_year = np.full(n_simulations, n_years + 1)  # Year of failure
-            alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool)
-            
-            # Track annuity income for each simulation
-            annuity_income = np.zeros((n_simulations, n_years))
-            
-            # Simulate each year
-            for year in range(1, n_years + 1):
-                age = current_age + year
+            # Progress callback function
+            def update_progress(year, total_years, age, partial_results=None):
+                progress = year / total_years
+                progress_bar.progress(progress)
+                status_text.text(f"Simulating year {year}/{total_years} (Age {age}) - Calculating taxes with PolicyEngine...")
                 
-                # Calculate annuity income for this year
-                if has_annuity:
-                    # Determine who gets annuity payments this year
-                    if annuity_type == "Fixed Period":
-                        # Fixed period: pays for specified years regardless of mortality
-                        gets_annuity = year <= annuity_guarantee_years
-                        annuity_income[:, year-1] = annuity_annual if gets_annuity else 0
-                    elif annuity_type == "Life Only":
-                        # Life only: pays while alive
-                        annuity_income[:, year-1] = np.where(alive_mask[:, year-1], annuity_annual, 0)
-                    else:  # Life Contingent with Guarantee
-                        # Pays while alive OR during guarantee period
-                        in_guarantee = year <= annuity_guarantee_years
-                        annuity_income[:, year-1] = np.where(
-                            alive_mask[:, year-1] | in_guarantee,
-                            annuity_annual, 0
+                # Update live chart every 5 years
+                if (year % 5 == 0 or year == total_years) and partial_results:
+                    if 'portfolio_paths' in partial_results:
+                        portfolio_paths_partial = partial_results['portfolio_paths']
+                        current_percentiles = np.percentile(portfolio_paths_partial[:, :year+1], [10, 25, 50, 75, 90], axis=0)
+                        years_so_far = np.arange(current_age, current_age + year + 1)
+                        
+                        fig_live = go.Figure()
+                        fig_live.add_trace(go.Scatter(
+                            x=years_so_far, y=current_percentiles[4],
+                            mode='lines', name='90th percentile',
+                            line=dict(width=0), showlegend=False
+                        ))
+                        fig_live.add_trace(go.Scatter(
+                            x=years_so_far, y=current_percentiles[0],
+                            mode='lines', name='10th percentile',
+                            line=dict(width=0), fill='tonexty',
+                            fillcolor='rgba(68, 68, 68, 0.1)', showlegend=False
+                        ))
+                        fig_live.add_trace(go.Scatter(
+                            x=years_so_far, y=current_percentiles[2],
+                            mode='lines', name='Median',
+                            line=dict(color='blue', width=2)
+                        ))
+                        fig_live.update_layout(
+                            title=f"Portfolio Projections (Progress: {year}/{total_years} years)",
+                            xaxis_title="Age", yaxis_title="Portfolio Value ($)",
+                            yaxis_tickformat='$,.0f', height=400
                         )
-                
-                # Mortality (if enabled)
-                if include_mortality and age > current_age:
-                    mort_rate = np.interp(age, 
-                                         list(mortality_rates.keys()) if include_mortality else [age],
-                                         list(mortality_rates.values()) if include_mortality else [0])
-                    death_this_year = np.random.random(n_simulations) < mort_rate
-                    alive_mask[death_this_year, year:] = False
-                
-                # Only simulate for those still alive and not failed
-                active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
-                
-                if not active.any():
-                    continue
-                
-                # Investment returns - Geometric Brownian Motion
-                # This is the standard model in finance literature
-                # dS/S = μdt + σdW where μ is drift, σ is volatility
-                returns = np.random.normal(expected_return/100, return_volatility/100, n_simulations)
-                growth_factor = np.exp(returns)  # Log-normal to ensure positive prices
-                
-                # Portfolio evolution for ALL scenarios (not just active)
-                current_portfolio = portfolio_paths[:, year-1]
-                
-                # Growth (only for non-zero portfolios)
-                portfolio_after_growth = np.zeros_like(current_portfolio)
-                portfolio_after_growth[active] = current_portfolio[active] * growth_factor[active]
-                
-                # Dividends - calculated on current portfolio value for ALL scenarios
-                # This WILL vary each year as portfolio values change
-                dividends = current_portfolio * (dividend_yield / 100)
-                dividend_income[:, year-1] = dividends  # Store for all scenarios
-                
-                # Calculate actual withdrawal needed (after considering dividends)
-                # Net need is consumption minus guaranteed income minus dividends
-                actual_net_need = np.maximum(0, net_consumption_need - dividends)
-                
-                # Only withdraw what we need (don't withdraw if dividends cover it)
-                actual_gross_withdrawal = np.zeros(n_simulations)
-                actual_gross_withdrawal[active] = actual_net_need[active] / (1 - effective_tax_rate/100)
-                
-                # Track withdrawals 
-                gross_withdrawals[:, year-1] = actual_gross_withdrawal
-                
-                # Calculate REALIZED capital gains on withdrawals
-                # Proportion of portfolio that is gains vs basis
-                gain_fraction = np.where(current_portfolio > 0,
-                                        np.maximum(0, (current_portfolio - cost_basis) / current_portfolio),
-                                        0)
-                
-                # Realized capital gains from this withdrawal
-                realized_gains = actual_gross_withdrawal * gain_fraction
-                capital_gains[:, year-1] = realized_gains
-                
-                # Update cost basis (proportionally reduced by withdrawal)
-                withdrawal_fraction = np.where(current_portfolio > 0,
-                                              actual_gross_withdrawal / current_portfolio,
-                                              0)
-                cost_basis *= (1 - withdrawal_fraction)
-                
-                # Simplified tax calculation
-                # In reality, capital gains have preferential rates
-                # Dividends may be qualified (lower rate) or ordinary
-                ordinary_income = dividends  # Assume dividends are ordinary (conservative)
-                capital_gains_income = realized_gains
-                
-                # Apply different rates (simplified)
-                ordinary_tax = ordinary_income * (effective_tax_rate/100)
-                cap_gains_tax = capital_gains_income * (effective_tax_rate * 0.6 / 100)  # Cap gains ~60% of ordinary rate
-                
-                taxes_paid[:, year-1] = ordinary_tax + cap_gains_tax
-                
-                # Net withdrawals after tax
-                net_withdrawals[:, year-1] = actual_gross_withdrawal * (1 - effective_tax_rate/100)
-                
-                # New portfolio value (dividends received, withdrawals taken)
-                new_portfolio = portfolio_after_growth + dividends - actual_gross_withdrawal
-                
-                # Check for failures
-                newly_failed = (current_portfolio > 0) & (new_portfolio < 0)
-                failure_year[newly_failed & (failure_year > n_years)] = year
-                
-                # Update portfolio (floor at 0)
-                portfolio_paths[:, year] = np.maximum(0, new_portfolio)
+                        live_chart_placeholder.plotly_chart(fig_live, use_container_width=True)
+            
+            # Run simulation using modularized function
+            simulation_results = simulate_portfolio(
+                n_simulations=n_simulations,
+                n_years=n_years,
+                initial_portfolio=initial_portfolio,
+                current_age=current_age,
+                include_mortality=include_mortality,
+                social_security=social_security,
+                pension=pension,
+                has_annuity=has_annuity,
+                annuity_type=annuity_type,
+                annuity_annual=annuity_annual,
+                annuity_guarantee_years=annuity_guarantee_years,
+                net_consumption_need=net_consumption_need,
+                expected_return=expected_return,
+                return_volatility=return_volatility,
+                dividend_yield=dividend_yield,
+                state=state,
+                progress_callback=update_progress
+            )
+            
+            # Extract results
+            portfolio_paths = simulation_results['portfolio_paths']
+            failure_year = simulation_results['failure_year']
+            alive_mask = simulation_results['alive_mask']
+            annuity_income = simulation_results['annuity_income']
+            dividend_income = simulation_results['dividend_income']
+            capital_gains = simulation_results['capital_gains']
+            gross_withdrawals = simulation_results['gross_withdrawals']
+            taxes_paid = simulation_results['taxes_paid']
+            net_withdrawals = simulation_results['net_withdrawals']
+            cost_basis = simulation_results['cost_basis']
             
             # Calculate statistics
             success_mask = failure_year > n_years
@@ -773,8 +757,12 @@ with tab3:
                     1, n_simulations, 1
                 ) - 1
                 if st.button("🔀 Shuffle"):
-                    trajectory_idx = np.random.randint(0, n_simulations)
+                    st.session_state.shuffled_trajectory = np.random.randint(0, n_simulations)
                     st.rerun()
+                
+                # Use shuffled trajectory if available
+                if 'shuffled_trajectory' in st.session_state:
+                    trajectory_idx = st.session_state.shuffled_trajectory
         
         # Prepare data based on selection
         years_plot = np.arange(current_age + 1, max_age + 1)
@@ -1006,7 +994,9 @@ with tab4:
         st.subheader("📊 Key Findings")
         
         # Safe withdrawal rate analysis
-        current_withdrawal_rate = (net_consumption_need / (1 - effective_tax_rate/100)) / initial_portfolio * 100
+        # Calculate actual withdrawal rate from simulation results
+        avg_gross_withdrawal = np.mean(results['gross_withdrawals'][:, 0])  # First year average
+        current_withdrawal_rate = (avg_gross_withdrawal / initial_portfolio) * 100
         
         if results['success_rate'] > 0.95:
             st.success(f"""
@@ -1047,7 +1037,7 @@ with tab4:
             
             new_consumption = annual_consumption * (1 + spending_change/100)
             new_net = new_consumption - guaranteed_income
-            new_withdrawal_rate = (new_net / (1 - effective_tax_rate/100)) / initial_portfolio * 100
+            new_withdrawal_rate = (new_net * 1.25) / initial_portfolio * 100  # Rough estimate
             
             st.write(f"""
             **Adjusted Scenario:**

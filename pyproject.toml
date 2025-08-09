@@ -30,6 +30,7 @@ dependencies = [
     "pandas>=2.0.0",
     "scipy>=1.10.0",
     "policyengine-us>=1.0.0",
+    "pyvis>=0.3.2",  # Required by policyengine-core
 ]
 
 [project.optional-dependencies]

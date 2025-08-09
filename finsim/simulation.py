@@ -11,18 +11,16 @@ import json
 class SimulationConfig:
     """Configuration for retirement simulation."""
     
-    # Age parameters
+    # Required parameters (no defaults)
     current_age: int
     retirement_age: int
     max_age: int
-    gender: str = "Male"
-    
-    # Financial position
     initial_portfolio: float
-    
-    # Annual spending & income
     annual_consumption: float
     social_security: float
+    
+    # Optional parameters (with defaults)
+    gender: str = "Male"
     pension: float = 0
     
     # Annuity parameters
@@ -178,19 +176,20 @@ class RetirementSimulation:
             # Calculate annuity income
             annuity_income[year] = self._calculate_annuity_income(year, alive_mask[year])
             
-            # Investment returns (GBM)
-            returns = np.random.normal(
-                self.config.expected_return / 100,
+            # Investment returns (GBM) - PRICE appreciation only
+            price_returns = np.random.normal(
+                self.config.expected_return / 100,  # This is price return only
                 self.config.return_volatility / 100
             )
-            growth_factor = np.exp(returns)
+            growth_factor = np.exp(price_returns)
             portfolio_after_growth = portfolio_values[year] * growth_factor
             
-            # Dividends
+            # Dividends paid out as cash (separate from price appreciation)
             dividends = portfolio_values[year] * (self.config.dividend_yield / 100)
             dividend_income[year] = dividends
             
             # Calculate withdrawal needed
+            # Dividends are cash we receive, reducing withdrawal needs
             guaranteed = self.config.social_security + self.config.pension + annuity_income[year]
             net_need = max(0, self.config.annual_consumption - guaranteed - dividends)
             gross_withdrawal = net_need / (1 - self.config.effective_tax_rate / 100)
@@ -201,7 +200,9 @@ class RetirementSimulation:
             taxes_paid[year] = taxable_income * (self.config.effective_tax_rate / 100)
             
             # Update portfolio
-            new_portfolio = portfolio_after_growth + dividends - gross_withdrawal
+            # Portfolio grows by price appreciation, we receive dividends as cash,
+            # and we withdraw what we need
+            new_portfolio = portfolio_after_growth - gross_withdrawal
             portfolio_values[year + 1] = max(0, new_portfolio)
             
             # Check for failure
