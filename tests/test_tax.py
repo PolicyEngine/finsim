@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from finsim.tax_calculator import TaxCalculator
+from finsim.tax import TaxCalculator
 
 
 class TestTaxCalculator:
