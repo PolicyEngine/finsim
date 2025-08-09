@@ -121,17 +121,31 @@ def simulate_portfolio(
         # Generate Student-t distributed random variables
         # df=5 gives fatter tails than normal but not extreme
         t_dist = stats.t(df=5)
-        z = t_dist.rvs(size=n_simulations, random_state=None)  # Ensure different random state each time
+        z_raw = t_dist.rvs(size=n_simulations)
         
         # Normalize to unit variance (Student-t with df=5 has variance = 5/3)
-        z = z / np.sqrt(5/3)
+        z = z_raw / np.sqrt(5/3)
         
-        # Use a tighter cap to prevent unrealistic compound growth
-        # 3 sigma allows for 99.7% of normal distribution while preventing extremes
-        z = np.clip(z, -3, 3)
+        # Cap at 5 standard deviations to prevent numerical overflow
+        # With Student-t, this still allows for realistic extreme events
+        z_clipped = np.clip(z, -5, 5)
         
-        log_returns = (mu - 0.5 * sigma**2) + sigma * z
+        
+        log_returns = (mu - 0.5 * sigma**2) + sigma * z_clipped
         growth_factor = np.exp(log_returns)
+        
+        # CRITICAL CHECK: Growth factor should NEVER exceed exp(0.8087) = 2.245
+        max_theoretical_growth = np.exp((mu - 0.5 * sigma**2) + sigma * 5)
+        if np.any(growth_factor > max_theoretical_growth + 0.001):
+            print(f"ERROR in year {year}: Growth factor exceeds theoretical maximum!")
+            print(f"  Max growth factor: {np.max(growth_factor):.4f}")
+            print(f"  Theoretical max: {max_theoretical_growth:.4f}")
+            bad_sims = np.where(growth_factor > max_theoretical_growth + 0.001)[0]
+            print(f"  {len(bad_sims)} simulations exceed max")
+            if len(bad_sims) <= 5:
+                for s in bad_sims:
+                    print(f"    Sim {s}: z={z[s]:.2f}, z_clipped={z_clipped[s]:.2f}, growth={growth_factor[s]:.4f}")
+        
         
         # Portfolio evolution (only for living people)
         current_portfolio = portfolio_paths[:, year-1]
@@ -204,6 +218,7 @@ def simulate_portfolio(
         
         # New portfolio value
         new_portfolio = portfolio_after_growth - actual_gross_withdrawal
+        
         
         # Check for failures
         newly_failed = (current_portfolio > 0) & (new_portfolio < 0)
