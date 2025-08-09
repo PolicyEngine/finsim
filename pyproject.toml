@@ -48,6 +48,11 @@ app = [
     "streamlit>=1.32.0",
     "plotly>=5.18.0",
 ]
+enhanced = [
+    "arch>=6.0.0",  # GARCH volatility modeling
+    "yfinance>=0.2.0",  # Historical market data
+    "statsmodels>=0.14.0",  # Statistical analysis
+]
 
 [project.urls]
 Homepage = "https://github.com/PolicyEngine/finsim"

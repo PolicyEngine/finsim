@@ -23,10 +23,18 @@ from .monte_carlo import MonteCarloSimulator
 from .tax_calculator import TaxCalculator
 from .annuity import AnnuityCalculator
 from .enhanced_monte_carlo import EnhancedMonteCarloSimulator
+from .vectorized_tax import (
+    VectorizedTaxCalculator,
+    MonteCarloDataset,
+    calculate_monte_carlo_after_tax_income
+)
 
 __all__ = [
     "MonteCarloSimulator",
     "TaxCalculator", 
     "AnnuityCalculator",
-    "EnhancedMonteCarloSimulator"
+    "EnhancedMonteCarloSimulator",
+    "VectorizedTaxCalculator",
+    "MonteCarloDataset",
+    "calculate_monte_carlo_after_tax_income"
 ]
