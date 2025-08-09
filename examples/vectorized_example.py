@@ -7,8 +7,8 @@ Monte Carlo scenarios simultaneously using PolicyEngine-US.
 
 import numpy as np
 from finsim import (
-    EnhancedMonteCarloSimulator,
-    VectorizedTaxCalculator,
+    MonteCarloSimulator,
+    TaxCalculator,
     calculate_monte_carlo_after_tax_income
 )
 
@@ -84,8 +84,8 @@ def main():
     print("Multi-Year Tax Calculation")
     print("=" * 50)
     
-    # Create vectorized calculator
-    calc = VectorizedTaxCalculator(state=state)
+    # Create tax calculator
+    calc = TaxCalculator(state=state)
     
     # Simulate 100 scenarios over 15 years
     n_scenarios = 100

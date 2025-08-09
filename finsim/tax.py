@@ -147,7 +147,7 @@ class MonteCarloDataset(Dataset):
                 pass
 
 
-class VectorizedTaxCalculator:
+class TaxCalculator:
     """
     Calculate taxes for multiple Monte Carlo scenarios simultaneously.
     """
@@ -333,7 +333,7 @@ def calculate_monte_carlo_after_tax_income(
     age_array = np.full(n_scenarios, age)
     
     # Calculate taxes
-    calc = VectorizedTaxCalculator(state=state)
+    calc = TaxCalculator(state=state)
     tax_results = calc.calculate_batch_taxes(
         capital_gains_array=capital_gains,
         social_security_array=ss_array,
