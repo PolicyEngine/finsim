@@ -2,6 +2,7 @@
 
 import numpy as np
 from typing import Dict, Optional
+from scipy import stats
 from .tax import TaxCalculator
 from .mortality import get_mortality_rates
 
@@ -112,13 +113,22 @@ def simulate_portfolio(
         active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
         
         # Investment returns - Geometric Brownian Motion (GBM)
+        # Use Student-t distribution with 5 degrees of freedom for fatter tails
+        # This better matches empirical stock return distributions
         mu = expected_return / 100
         sigma = return_volatility / 100
-        z = np.random.standard_normal(n_simulations)
         
-        # Cap extreme outliers at 3 standard deviations to prevent numerical issues
-        # This affects < 0.3% of draws and prevents unrealistic 1000x+ growth
-        z = np.clip(z, -3, 3)
+        # Generate Student-t distributed random variables
+        # df=5 gives fatter tails than normal but not extreme
+        t_dist = stats.t(df=5)
+        z = t_dist.rvs(size=n_simulations)
+        
+        # Normalize to unit variance (Student-t with df=5 has variance = 5/3)
+        z = z / np.sqrt(5/3)
+        
+        # Cap at 5 standard deviations to prevent numerical overflow
+        # With Student-t, this still allows for realistic extreme events
+        z = np.clip(z, -5, 5)
         
         log_returns = (mu - 0.5 * sigma**2) + sigma * z
         growth_factor = np.exp(log_returns)
@@ -200,6 +210,7 @@ def simulate_portfolio(
         failure_year[newly_failed & (failure_year > n_years)] = year
         
         # Update portfolio
+        # Remove artificial cap - let the 4-sigma clipping handle extremes
         portfolio_paths[:, year] = np.maximum(0, new_portfolio)
     
     # Calculate estate values at death

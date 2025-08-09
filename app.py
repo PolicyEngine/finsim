@@ -616,9 +616,10 @@ with tab2:
                          help="Probability of maintaining consumption through planning horizon")
             
             with col2:
-                median_final = np.median(portfolio_paths[success_mask, -1]) if success_mask.any() else 0
-                st.metric("Median Final Portfolio", f"${median_final:,.0f}",
-                         help="Median portfolio value at end (successful scenarios only)")
+                # Calculate median of ALL scenarios (including failures)
+                median_final_all = np.median(portfolio_paths[:, -1])
+                st.metric("Median Final Portfolio", f"${median_final_all:,.0f}",
+                         help="Median portfolio value at end (all scenarios)")
             
             with col3:
                 if (~success_mask).any():
