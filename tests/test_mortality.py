@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from finsim.mortality import get_mortality_rates, apply_mortality
+from finsim.mortality import get_mortality_rates, calculate_survival_curve, calculate_life_expectancy
 
 
 class TestMortality:
@@ -40,67 +40,56 @@ class TestMortality:
         if 100 in rates:
             assert rates[100] >= 0.2
     
-    def test_apply_mortality_basic(self):
-        """Test basic mortality application."""
-        n_simulations = 1000
-        n_years = 30
-        starting_age = 65
-        
-        alive_mask = apply_mortality(n_simulations, n_years, starting_age)
+    def test_calculate_survival_curve(self):
+        """Test survival curve calculation."""
+        # Test for ages 65 to 95
+        survival_curve = calculate_survival_curve(65, 95, "Male")
         
         # Check shape
-        assert alive_mask.shape == (n_simulations, n_years + 1)
+        assert len(survival_curve) == 31  # 65 to 95 inclusive
         
-        # Everyone starts alive
-        assert np.all(alive_mask[:, 0])
+        # Should start at 1.0 (100% survival at start)
+        assert survival_curve[0] == 1.0
         
-        # Some people should die over 30 years
-        assert not np.all(alive_mask[:, -1])
+        # Should decrease monotonically
+        for i in range(1, len(survival_curve)):
+            assert survival_curve[i] <= survival_curve[i-1]
         
-        # Once dead, stay dead (monotonic decrease)
-        for i in range(n_simulations):
-            for j in range(1, n_years + 1):
-                if not alive_mask[i, j-1]:
-                    assert not alive_mask[i, j]
+        # Should have significant mortality by age 95
+        assert survival_curve[-1] < 0.5  # Less than 50% survive to 95
     
-    def test_apply_mortality_no_mortality(self):
-        """Test that mortality can be disabled."""
-        n_simulations = 100
-        n_years = 10
-        starting_age = 65
+    def test_calculate_life_expectancy(self):
+        """Test life expectancy calculation."""
+        # Life expectancy at 65
+        le_65 = calculate_life_expectancy(65, "Male")
         
-        # Mock mortality rates to be zero
-        alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool)
+        # Should be reasonable (typically 15-20 years for 65-year-old male)
+        assert 10 < le_65 < 25
         
-        # Everyone should stay alive
-        assert np.all(alive_mask)
+        # Life expectancy should decrease with age
+        le_75 = calculate_life_expectancy(75, "Male")
+        assert le_75 < le_65
+        
+        # Women typically have higher life expectancy
+        le_65_female = calculate_life_expectancy(65, "Female")
+        assert le_65_female > le_65
     
-    def test_apply_mortality_extreme_ages(self):
-        """Test mortality at extreme ages."""
-        n_simulations = 100
-        n_years = 10
+    def test_gender_differences(self):
+        """Test that gender affects mortality rates."""
+        rates_male = get_mortality_rates("Male")
+        rates_female = get_mortality_rates("Female")
         
-        # Very old starting age
-        starting_age = 95
-        alive_mask = apply_mortality(n_simulations, n_years, starting_age)
-        
-        # Many should die quickly at age 95+
-        assert np.sum(alive_mask[:, -1]) < n_simulations * 0.5
+        # At most ages, female mortality should be lower
+        ages_to_check = [65, 75, 85]
+        for age in ages_to_check:
+            if age in rates_male and age in rates_female:
+                assert rates_female[age] <= rates_male[age]
     
-    def test_mortality_consistency(self):
-        """Test that mortality results are consistent but not identical."""
-        n_simulations = 100
-        n_years = 20
-        starting_age = 70
+    def test_survival_curve_gender(self):
+        """Test survival curves differ by gender."""
+        survival_male = calculate_survival_curve(65, 90, "Male")
+        survival_female = calculate_survival_curve(65, 90, "Female")
         
-        # Run twice
-        alive_mask1 = apply_mortality(n_simulations, n_years, starting_age)
-        alive_mask2 = apply_mortality(n_simulations, n_years, starting_age)
-        
-        # Should not be identical (randomness)
-        assert not np.array_equal(alive_mask1, alive_mask2)
-        
-        # But survival rates should be similar
-        survival_rate1 = np.mean(alive_mask1[:, -1])
-        survival_rate2 = np.mean(alive_mask2[:, -1])
-        assert abs(survival_rate1 - survival_rate2) < 0.2
+        # Female survival should generally be higher
+        # Check at age 85 (20 years from 65)
+        assert survival_female[20] > survival_male[20]

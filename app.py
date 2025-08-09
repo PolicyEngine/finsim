@@ -600,16 +600,22 @@ with tab1:
                 # Need to align the ages properly
                 joint_survival = []
                 for i, age in enumerate(ages):
+                    # Your survival at this age
+                    your_surv = survival_probs[i] if i < len(survival_probs) else 0
+                    
+                    # Spouse survival at their age
                     spouse_age_at_time = spouse_age + i
-                    if i < len(survival_probs) and spouse_age_at_time <= 100:
-                        spouse_surv = np.interp(spouse_age_at_time, 
-                                               list(spouse_mortality_rates.keys()),
-                                               [1.0] + spouse_survival_probs[:len(spouse_survival_probs)-1])
-                        if i < len(spouse_survival_probs):
-                            spouse_surv = spouse_survival_probs[i]
+                    if spouse_age_at_time >= spouse_age and spouse_age_at_time <= 100:
+                        # Find spouse survival for their age
+                        spouse_idx = spouse_age_at_time - spouse_age
+                        if spouse_idx < len(spouse_survival_probs):
+                            spouse_surv = spouse_survival_probs[spouse_idx]
                         else:
                             spouse_surv = 0
-                        joint_survival.append(survival_probs[i] * spouse_surv)
+                    else:
+                        spouse_surv = 0
+                    
+                    joint_survival.append(your_surv * spouse_surv)
                 
                 if joint_survival:
                     fig_mortality.add_trace(go.Scatter(
