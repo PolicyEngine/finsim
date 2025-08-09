@@ -1,6 +1,7 @@
 """Annuity calculations and comparisons."""
 
 import numpy as np
+import numpy_financial as npf
 import pandas as pd
 from typing import Dict, Optional, Tuple
 from scipy import optimize
@@ -64,13 +65,17 @@ class AnnuityCalculator:
         Returns:
             Annual internal rate of return
         """
+        # Handle edge case of no guarantee period for non-life-contingent annuities
+        if not life_contingent and guarantee_months == 0:
+            return -1.0  # Complete loss if no payments
+            
         if not life_contingent:
             # Simple case: fixed term annuity
             cash_flows = [-premium] + [monthly_payment] * guarantee_months
             
-            # Use numpy's IRR calculation
+            # Use numpy_financial's IRR calculation
             try:
-                monthly_irr = np.irr(cash_flows)
+                monthly_irr = npf.irr(cash_flows)
                 annual_irr = (1 + monthly_irr) ** 12 - 1
                 return annual_irr
             except:
@@ -78,9 +83,16 @@ class AnnuityCalculator:
                 def npv(rate):
                     return sum(cf / (1 + rate) ** i for i, cf in enumerate(cash_flows))
                 
-                monthly_irr = optimize.brentq(npv, -0.99, 10, xtol=1e-6)
-                annual_irr = (1 + monthly_irr) ** 12 - 1
-                return annual_irr
+                try:
+                    monthly_irr = optimize.brentq(npv, -0.99, 10, xtol=1e-6)
+                    annual_irr = (1 + monthly_irr) ** 12 - 1
+                    return annual_irr
+                except:
+                    # If optimization fails, return approximation
+                    total_payments = monthly_payment * guarantee_months
+                    if premium == 0:
+                        return 0.0
+                    return (total_payments / premium) ** (12 / guarantee_months) - 1 if guarantee_months > 0 else -1.0
         else:
             # Life contingent annuity - use survival probabilities
             return self._calculate_life_contingent_irr(
@@ -125,7 +137,7 @@ class AnnuityCalculator:
         
         # Calculate IRR
         try:
-            monthly_irr = np.irr(cash_flows)
+            monthly_irr = npf.irr(cash_flows)
             annual_irr = (1 + monthly_irr) ** 12 - 1
             return annual_irr
         except:

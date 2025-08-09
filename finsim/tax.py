@@ -91,14 +91,15 @@ class MonteCarloDataset(Dataset):
         state_code = state_fips_map.get(self.state, 6)
         
         # Build the dataset dictionary
+        # All variables use year time period for consistency
         data = {
             # Person variables
             "person_id": {self.year: person_ids},
-            "person_household": {self.year: household_ids},
-            "person_tax_unit": {self.year: tax_unit_ids},
-            "person_family": {self.year: family_ids},
-            "person_spm_unit": {self.year: spm_unit_ids},
-            "person_marital_unit": {self.year: marital_unit_ids},
+            "person_household_id": {self.year: household_ids},  # Membership arrays also use year
+            "person_tax_unit_id": {self.year: tax_unit_ids},
+            "person_family_id": {self.year: family_ids},
+            "person_spm_unit_id": {self.year: spm_unit_ids},
+            "person_marital_unit_id": {self.year: marital_unit_ids},
             "person_weight": {self.year: weights},
             "age": {self.year: self.ages},
             

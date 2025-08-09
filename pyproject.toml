@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "finsim"
@@ -26,6 +26,7 @@ classifiers = [
 
 dependencies = [
     "numpy>=1.24.0",
+    "numpy-financial>=1.0.0",
     "pandas>=2.0.0",
     "scipy>=1.10.0",
     "policyengine-us>=1.0.0",
@@ -47,6 +48,7 @@ docs = [
 app = [
     "streamlit>=1.32.0",
     "plotly>=5.18.0",
+    "yfinance>=0.2.0",  # For fetching historical fund data
 ]
 enhanced = [
     "arch>=6.0.0",  # GARCH volatility modeling
@@ -60,8 +62,6 @@ Documentation = "https://policyengine.github.io/finsim"
 Repository = "https://github.com/PolicyEngine/finsim"
 Issues = "https://github.com/PolicyEngine/finsim/issues"
 
-[tool.setuptools]
-packages = ["finsim"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

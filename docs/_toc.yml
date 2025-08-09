@@ -3,9 +3,13 @@ format: jb-book
 root: intro
 chapters:
   - file: quickstart
+  - file: basic_simulation
+  - file: api
+    sections:
+      - file: simulation
+      - file: mortality
+  - file: architecture
   - file: monte_carlo
   - file: tax_calculations
   - file: annuities
-  - file: examples
-  - file: api
   - file: contributing

@@ -1,6 +1,6 @@
-# Retirement Settlement Decision Tool
+# FinSim by PolicyEngine
 
-A comprehensive tool for comparing structured settlement annuities with index fund investments, accounting for taxes, Social Security benefits, and mortality risk.
+A comprehensive financial simulation tool for comparing annuities with index fund investments, accounting for taxes, Social Security benefits, and mortality risk.
 
 ## Features
 
@@ -12,12 +12,27 @@ A comprehensive tool for comparing structured settlement annuities with index fu
 
 ## Installation
 
-```bash
-# Clone the repository
-cd retirement-decision-tool
+Using [uv](https://github.com/astral-sh/uv) (recommended):
 
-# Install dependencies
-pip install -r requirements.txt
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone the repository
+git clone https://github.com/PolicyEngine/finsim
+cd finsim
+
+# Create virtual environment and install
+uv venv
+uv pip install -e ".[app]"
+```
+
+Or with pip:
+
+```bash
+pip install finsim
+# For the Streamlit app:
+pip install "finsim[app]"
 ```
 
 ## Usage
@@ -25,6 +40,8 @@ pip install -r requirements.txt
 Run the Streamlit app:
 
 ```bash
+uv run streamlit run app.py
+# or
 streamlit run app.py
 ```
 
