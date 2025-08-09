@@ -706,67 +706,72 @@ with tab2:
                 'cost_basis': cost_basis  # Track basis for debugging
             }
             
-            # Save data to disk for debugging
-            import pickle
+            # Save raw simulation data to CSV for analysis
+            import pandas as pd
             import datetime
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            debug_data = {
-                'portfolio_paths': portfolio_paths,
-                'failure_year': failure_year,
-                'percentiles': percentiles,
-                'parameters': {
-                    'n_simulations': n_simulations,
-                    'n_years': n_years,
+            
+            # Create DataFrame with all simulation paths
+            # Each row is a simulation-year combination
+            data_rows = []
+            for sim_idx in range(n_simulations):
+                for year_idx in range(n_years + 1):
+                    row = {
+                        'simulation_id': sim_idx,
+                        'year': year_idx,
+                        'age': current_age + year_idx,
+                        'portfolio_value': portfolio_paths[sim_idx, year_idx],
+                        'dividend_income': dividend_income[sim_idx, year_idx] if year_idx < n_years else 0,
+                        'capital_gains': capital_gains[sim_idx, year_idx] if year_idx < n_years else 0,
+                        'gross_withdrawal': gross_withdrawals[sim_idx, year_idx] if year_idx < n_years else 0,
+                        'taxes_paid': taxes_paid[sim_idx, year_idx] if year_idx < n_years else 0,
+                        'net_withdrawal': net_withdrawals[sim_idx, year_idx] if year_idx < n_years else 0,
+                        'alive': alive_mask[sim_idx, year_idx] if include_mortality else True,
+                        'failed': year_idx >= failure_year[sim_idx]
+                    }
+                    data_rows.append(row)
+            
+            df = pd.DataFrame(data_rows)
+            
+            # Add VT index value (hypothetical growth at expected return without volatility)
+            # This represents what $1 invested in VT would be worth
+            vt_index_values = np.exp((expected_return / 100 - 0.5 * (return_volatility / 100)**2) * np.arange(n_years + 1))
+            df['vt_index_value'] = df['year'].apply(lambda y: vt_index_values[y])
+            
+            # Save to CSV
+            csv_filename = f"simulation_raw_data_{timestamp}.csv"
+            df.to_csv(csv_filename, index=False)
+            
+            # Also save a summary CSV with just the key metrics per simulation
+            summary_data = []
+            for sim_idx in range(n_simulations):
+                summary_data.append({
+                    'simulation_id': sim_idx,
                     'initial_portfolio': initial_portfolio,
-                    'current_age': current_age,
-                    'annual_consumption': annual_consumption,
-                    'social_security': social_security,
-                    'expected_return': expected_return,
-                    'return_volatility': return_volatility,
-                    'dividend_yield': dividend_yield,
-                    'state': state
-                }
-            }
+                    'final_portfolio': portfolio_paths[sim_idx, -1],
+                    'total_return': (portfolio_paths[sim_idx, -1] / initial_portfolio - 1) * 100,
+                    'failed': failure_year[sim_idx] <= n_years,
+                    'failure_year': failure_year[sim_idx] if failure_year[sim_idx] <= n_years else None,
+                    'max_portfolio': np.max(portfolio_paths[sim_idx, :]),
+                    'min_portfolio': np.min(portfolio_paths[sim_idx, :]),
+                    'total_dividends': np.sum(dividend_income[sim_idx, :]),
+                    'total_withdrawals': np.sum(gross_withdrawals[sim_idx, :]),
+                    'total_taxes': np.sum(taxes_paid[sim_idx, :])
+                })
             
-            debug_filename = f"simulation_debug_{timestamp}.pkl"
-            with open(debug_filename, 'wb') as f:
-                pickle.dump(debug_data, f)
+            summary_df = pd.DataFrame(summary_data)
+            summary_csv_filename = f"simulation_summary_{timestamp}.csv"
+            summary_df.to_csv(summary_csv_filename, index=False)
             
-            # Also save summary statistics to text file
-            summary_filename = f"simulation_summary_{timestamp}.txt"
-            with open(summary_filename, 'w') as f:
-                f.write(f"Simulation Summary - {timestamp}\n")
-                f.write("=" * 50 + "\n\n")
-                f.write("Parameters:\n")
-                for key, value in debug_data['parameters'].items():
-                    f.write(f"  {key}: {value}\n")
-                f.write("\n")
-                
-                f.write("Final Portfolio Values (Year 30):\n")
-                final_values = portfolio_paths[:, -1]
-                percentiles_final = np.percentile(final_values, [5, 10, 25, 50, 75, 90, 95, 99, 100])
-                f.write(f"  5th percentile: ${percentiles_final[0]:,.0f}\n")
-                f.write(f"  10th percentile: ${percentiles_final[1]:,.0f}\n")
-                f.write(f"  25th percentile: ${percentiles_final[2]:,.0f}\n")
-                f.write(f"  Median (50th): ${percentiles_final[3]:,.0f}\n")
-                f.write(f"  75th percentile: ${percentiles_final[4]:,.0f}\n")
-                f.write(f"  90th percentile: ${percentiles_final[5]:,.0f}\n")
-                f.write(f"  95th percentile: ${percentiles_final[6]:,.0f}\n")
-                f.write(f"  99th percentile: ${percentiles_final[7]:,.0f}\n")
-                f.write(f"  Maximum: ${percentiles_final[8]:,.0f}\n\n")
-                
-                f.write(f"Success Rate: {success_rate:.1%}\n")
-                f.write(f"Number of simulations > $1B: {np.sum(final_values > 1e9)}\n")
-                f.write(f"Number of simulations > $2B: {np.sum(final_values > 2e9)}\n\n")
-                
-                # Check percentiles over time
-                f.write("95th Percentile Over Time:\n")
-                for year in [0, 5, 10, 15, 20, 25, 30]:
-                    if year <= n_years:
-                        p95 = np.percentile(portfolio_paths[:, year], 95)
-                        f.write(f"  Year {year} (Age {current_age + year}): ${p95:,.0f}\n")
+            # Display summary statistics
+            st.success(f"✅ Raw data saved to {csv_filename} ({len(df):,} rows)")
+            st.info(f"📊 Summary saved to {summary_csv_filename} ({len(summary_df):,} simulations)")
             
-            st.success(f"✅ Debug data saved to {debug_filename} and {summary_filename}")
+            # Show quick stats
+            extreme_sims = summary_df[summary_df['final_portfolio'] > 1e9]
+            if len(extreme_sims) > 0:
+                st.warning(f"⚠️ Found {len(extreme_sims)} simulations with final portfolio > $1B")
+                st.dataframe(extreme_sims[['simulation_id', 'final_portfolio', 'max_portfolio', 'total_return']].head(10))
             
             # Debug: Show that dividends do vary
             st.info(f"""
