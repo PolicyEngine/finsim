@@ -27,7 +27,6 @@ class EnhancedMonteCarloSimulator:
     - Historical data fitting
     - Fat-tailed distributions
     - Regime switching
-    - Jump diffusion processes
     """
     
     def __init__(

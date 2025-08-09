@@ -7,7 +7,7 @@ name = "finsim"
 version = "0.1.0"
 description = "Financial simulation tool for comparing annuities and investments with tax-aware Monte Carlo modeling"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
     {name = "PolicyEngine", email = "hello@policyengine.org"},
