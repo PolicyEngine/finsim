@@ -92,6 +92,28 @@ fund_ticker = st.sidebar.text_input(
 )
 
 st.sidebar.header("🏦 Income Sources")
+
+# Employment income
+employment_income = st.sidebar.number_input(
+    "Annual Employment Income ($)",
+    min_value=0,
+    value=0,
+    step=5_000,
+    format="%d",
+    help="Annual wages and salaries (in today's dollars, stops at retirement age)"
+)
+
+if employment_income > 0:
+    retirement_age = st.sidebar.slider(
+        "Retirement Age",
+        min_value=50,
+        max_value=75,
+        value=65,
+        help="Age when employment income stops"
+    )
+else:
+    retirement_age = current_age  # No retirement if no employment income
+
 social_security = st.sidebar.number_input(
     "Annual Social Security ($)",
     min_value=0,
@@ -586,6 +608,8 @@ with tab2:
                 include_mortality=include_mortality,
                 social_security=social_security,
                 pension=pension,
+                employment_income=employment_income,
+                retirement_age=retirement_age,
                 has_annuity=has_annuity,
                 annuity_type=annuity_type,
                 annuity_annual=annuity_annual,

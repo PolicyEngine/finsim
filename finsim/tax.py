@@ -25,7 +25,8 @@ class MonteCarloDataset(Dataset):
         state: str = "CA",
         year: int = 2025,
         filing_status: str = "SINGLE",
-        dividend_income_array: np.ndarray = None
+        dividend_income_array: np.ndarray = None,
+        employment_income_array: np.ndarray = None
     ):
         self.n_scenarios = n_scenarios
         self.capital_gains = capital_gains_array
@@ -35,6 +36,7 @@ class MonteCarloDataset(Dataset):
         self.year = year
         self.filing_status = filing_status
         self.dividend_income = dividend_income_array if dividend_income_array is not None else np.zeros(n_scenarios)
+        self.employment_income = employment_income_array if employment_income_array is not None else np.zeros(n_scenarios)
         
         self.tmp_file = tempfile.NamedTemporaryFile(suffix='.h5', delete=False)
         self.file_path = Path(self.tmp_file.name)
@@ -95,7 +97,7 @@ class MonteCarloDataset(Dataset):
             "social_security": {self.year: self.social_security},
             "social_security_retirement": {self.year: self.social_security},
             
-            "employment_income": {self.year: np.zeros(self.n_scenarios)},
+            "employment_income": {self.year: self.employment_income},
             "interest_income": {self.year: np.zeros(self.n_scenarios)},
             "dividend_income": {self.year: self.dividend_income},
             
@@ -141,7 +143,8 @@ class TaxCalculator:
         social_security_array: np.ndarray,
         ages: np.ndarray,
         filing_status: str = "SINGLE",
-        dividend_income_array: np.ndarray = None
+        dividend_income_array: np.ndarray = None,
+        employment_income_array: np.ndarray = None
     ) -> Dict[str, np.ndarray]:
         """
         Calculate taxes for a batch of scenarios using PolicyEngine-US.
@@ -154,6 +157,9 @@ class TaxCalculator:
         if dividend_income_array is None:
             dividend_income_array = np.zeros(n_scenarios)
         
+        if employment_income_array is None:
+            employment_income_array = np.zeros(n_scenarios)
+        
         dataset = MonteCarloDataset(
             n_scenarios=n_scenarios,
             capital_gains_array=capital_gains_array,
@@ -162,7 +168,8 @@ class TaxCalculator:
             state=self.state,
             year=self.year,
             filing_status=filing_status,
-            dividend_income_array=dividend_income_array
+            dividend_income_array=dividend_income_array,
+            employment_income_array=employment_income_array
         )
         
         try:

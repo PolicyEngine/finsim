@@ -21,6 +21,8 @@ def simulate_portfolio(
     # Income sources
     social_security: float,
     pension: float,
+    employment_income: float,  # Wages and salaries
+    retirement_age: int,  # Age when employment income stops
     
     # Annuity parameters
     has_annuity: bool,
@@ -143,7 +145,11 @@ def simulate_portfolio(
         
         # Calculate withdrawal needed for consumption AND last year's taxes
         # This is the KEY CHANGE - we pay last year's taxes from this year's withdrawal
-        guaranteed_income = social_security + pension + annuity_income[:, year-1]
+        
+        # Employment income (stops at retirement age)
+        wages = employment_income if age < retirement_age else 0
+        
+        guaranteed_income = social_security + pension + annuity_income[:, year-1] + wages
         total_income_available = guaranteed_income + dividends
         
         # What we need to withdraw = consumption + last year's taxes - available income
@@ -175,12 +181,16 @@ def simulate_portfolio(
             total_ss_and_pension = social_security + pension + annuity_income[:, year-1]
             ages_array = np.full(n_simulations, age)
             
+            # Employment income for tax calculation
+            employment_income_array = np.full(n_simulations, wages)
+            
             tax_results = tax_calc.calculate_batch_taxes(
                 capital_gains_array=realized_gains,
                 social_security_array=total_ss_and_pension,
                 ages=ages_array,
                 filing_status="SINGLE",
-                dividend_income_array=dividends
+                dividend_income_array=dividends,
+                employment_income_array=employment_income_array
             )
             
             # Store tax liability for next year
