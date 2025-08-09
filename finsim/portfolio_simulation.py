@@ -121,14 +121,14 @@ def simulate_portfolio(
         # Generate Student-t distributed random variables
         # df=5 gives fatter tails than normal but not extreme
         t_dist = stats.t(df=5)
-        z = t_dist.rvs(size=n_simulations)
+        z = t_dist.rvs(size=n_simulations, random_state=None)  # Ensure different random state each time
         
         # Normalize to unit variance (Student-t with df=5 has variance = 5/3)
         z = z / np.sqrt(5/3)
         
-        # Cap at 5 standard deviations to prevent numerical overflow
-        # With Student-t, this still allows for realistic extreme events
-        z = np.clip(z, -5, 5)
+        # Use a tighter cap to prevent unrealistic compound growth
+        # 3 sigma allows for 99.7% of normal distribution while preventing extremes
+        z = np.clip(z, -3, 3)
         
         log_returns = (mu - 0.5 * sigma**2) + sigma * z
         growth_factor = np.exp(log_returns)
