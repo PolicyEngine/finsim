@@ -548,23 +548,25 @@ with tab2:
                 if (year % 5 == 0 or year == total_years) and partial_results:
                     if 'portfolio_paths' in partial_results:
                         portfolio_paths_partial = partial_results['portfolio_paths']
-                        current_percentiles = np.percentile(portfolio_paths_partial[:, :year+1], [10, 25, 50, 75, 90], axis=0)
+                        current_percentiles = np.percentile(portfolio_paths_partial[:, :year+1], [5, 50, 95], axis=0)
                         years_so_far = np.arange(current_age, current_age + year + 1)
                         
                         fig_live = go.Figure()
+                        # 90% CI
                         fig_live.add_trace(go.Scatter(
-                            x=years_so_far, y=current_percentiles[4],
-                            mode='lines', name='90th percentile',
+                            x=years_so_far, y=current_percentiles[2],  # 95th percentile
+                            mode='lines', name='95th percentile',
                             line=dict(width=0), showlegend=False
                         ))
                         fig_live.add_trace(go.Scatter(
-                            x=years_so_far, y=current_percentiles[0],
-                            mode='lines', name='10th percentile',
+                            x=years_so_far, y=current_percentiles[0],  # 5th percentile
+                            mode='lines', name='5th percentile',
                             line=dict(width=0), fill='tonexty',
-                            fillcolor='rgba(68, 68, 68, 0.1)', showlegend=False
+                            fillcolor='rgba(0,100,200,0.2)', showlegend=False
                         ))
+                        # Median
                         fig_live.add_trace(go.Scatter(
-                            x=years_so_far, y=current_percentiles[2],
+                            x=years_so_far, y=current_percentiles[1],
                             mode='lines', name='Median',
                             line=dict(color='blue', width=2)
                         ))
@@ -612,8 +614,8 @@ with tab2:
             success_mask = failure_year > n_years
             success_rate = success_mask.mean()
             
-            # Percentiles over time
-            percentiles = np.percentile(portfolio_paths, [10, 25, 50, 75, 90], axis=0)
+            # Percentiles over time (5th, 50th, 95th for 90% CI)
+            percentiles = np.percentile(portfolio_paths, [5, 50, 95], axis=0)
             
             # Display key metrics
             col1, col2, col3, col4 = st.columns(4)
@@ -649,40 +651,30 @@ with tab2:
             
             fig = go.Figure()
             
-            # Add percentile bands
+            # Add 90% confidence interval (5th to 95th percentile)
             fig.add_trace(go.Scatter(
-                x=years, y=percentiles[4],
-                name='90th Percentile',
-                line=dict(color='lightgreen', width=1),
-                showlegend=True
+                x=years, y=percentiles[2],  # 95th percentile
+                name='90% Confidence Interval',
+                line=dict(color='rgba(0,100,200,0.3)', width=1),
+                showlegend=True,
+                legendgroup='ci'
             ))
             
             fig.add_trace(go.Scatter(
-                x=years, y=percentiles[3],
+                x=years, y=percentiles[0],  # 5th percentile
+                name='5th Percentile',
                 fill='tonexty',
-                name='75th Percentile',
-                line=dict(color='green', width=1),
-                fillcolor='rgba(0,255,0,0.1)'
+                fillcolor='rgba(0,100,200,0.2)',
+                line=dict(color='rgba(0,100,200,0.3)', width=1),
+                showlegend=False,
+                legendgroup='ci'
             ))
             
+            # Add median line
             fig.add_trace(go.Scatter(
-                x=years, y=percentiles[2],
+                x=years, y=percentiles[1],  # Median (50th percentile)
                 name='Median',
-                line=dict(color='blue', width=2)
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=years, y=percentiles[1],
-                fill='tonexty',
-                name='25th Percentile',
-                line=dict(color='orange', width=1),
-                fillcolor='rgba(255,165,0,0.1)'
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=years, y=percentiles[0],
-                name='10th Percentile',
-                line=dict(color='red', width=1)
+                line=dict(color='blue', width=3)
             ))
             
             # Add horizontal line at 0
