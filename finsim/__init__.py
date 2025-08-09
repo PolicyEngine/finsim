@@ -24,13 +24,39 @@ Example:
 
 __version__ = "0.1.0"
 
-from .monte_carlo import MonteCarloSimulator
-from .annuity import AnnuityCalculator
-from .tax import TaxCalculator, MonteCarloDataset
-
+# Lazy imports to avoid circular dependencies
 __all__ = [
     "MonteCarloSimulator",
     "AnnuityCalculator",
     "TaxCalculator",
-    "MonteCarloDataset"
+    "MonteCarloDataset",
+    "ReturnGenerator",
+    "simulate_portfolio",
+    "get_mortality_rates",
+    "apply_mortality",
 ]
+
+def __getattr__(name):
+    """Lazy import of modules to avoid circular dependencies."""
+    if name == "MonteCarloSimulator":
+        from .monte_carlo import MonteCarloSimulator
+        return MonteCarloSimulator
+    elif name == "AnnuityCalculator":
+        from .annuity import AnnuityCalculator
+        return AnnuityCalculator
+    elif name == "TaxCalculator":
+        from .tax import TaxCalculator
+        return TaxCalculator
+    elif name == "MonteCarloDataset":
+        from .tax import MonteCarloDataset
+        return MonteCarloDataset
+    elif name == "ReturnGenerator":
+        from .return_generator import ReturnGenerator
+        return ReturnGenerator
+    elif name == "simulate_portfolio":
+        from .portfolio_simulation import simulate_portfolio
+        return simulate_portfolio
+    elif name in ["get_mortality_rates", "apply_mortality"]:
+        from .mortality import get_mortality_rates, apply_mortality
+        return locals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

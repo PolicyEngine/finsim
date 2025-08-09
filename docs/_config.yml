@@ -34,9 +34,9 @@ html:
   
 sphinx:
   extra_extensions:
-    - sphinx_autodoc_typehints
     - sphinx.ext.napoleon
     - sphinx.ext.viewcode
+    - sphinxcontrib.mermaid
   config:
     html_theme: sphinx_book_theme
     html_theme_options:

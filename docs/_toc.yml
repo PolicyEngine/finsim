@@ -4,6 +4,7 @@ root: intro
 chapters:
   - file: quickstart
   - file: basic_simulation
+  - file: simulation_flow
   - file: api
     sections:
       - file: simulation
