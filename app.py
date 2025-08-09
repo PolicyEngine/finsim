@@ -66,6 +66,7 @@ has_spouse = st.sidebar.checkbox(
 spouse_age = current_age
 spouse_gender = "Female" if gender == "Male" else "Male"
 spouse_employment_income = 0
+spouse_employment_growth_rate = 0.0
 spouse_social_security = 0
 spouse_pension = 0
 spouse_retirement_age = retirement_age
@@ -130,15 +131,28 @@ employment_income = st.sidebar.number_input(
 )
 
 if employment_income > 0:
-    retirement_age = st.sidebar.slider(
-        "Your Retirement Age" if has_spouse else "Retirement Age",
-        min_value=50,
-        max_value=75,
-        value=65,
-        help="Age when employment income stops"
-    )
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        retirement_age = st.number_input(
+            "Retirement Age" if not has_spouse else "Your Retirement Age",
+            min_value=current_age,
+            max_value=75,
+            value=max(current_age, 65),
+            help="Age when employment income stops"
+        )
+    with col2:
+        employment_growth_rate = st.number_input(
+            "Income Growth (%)",
+            min_value=0.0,
+            max_value=10.0,
+            value=3.0,
+            step=0.5,
+            format="%.1f",
+            help="Annual nominal wage growth (includes inflation)"
+        )
 else:
     retirement_age = current_age  # No retirement if no employment income
+    employment_growth_rate = 0.0
 
 social_security = st.sidebar.number_input(
     "Annual Social Security ($)" if not has_spouse else "Your Social Security ($)",
@@ -172,15 +186,28 @@ if has_spouse:
     )
     
     if spouse_employment_income > 0:
-        spouse_retirement_age = st.sidebar.slider(
-            "Spouse Retirement Age",
-            min_value=50,
-            max_value=75,
-            value=65,
-            help="Age when spouse's employment income stops"
-        )
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            spouse_retirement_age = st.number_input(
+                "Spouse Retirement Age",
+                min_value=spouse_age,
+                max_value=75,
+                value=max(spouse_age, 65),
+                help="Age when spouse's employment income stops"
+            )
+        with col2:
+            spouse_employment_growth_rate = st.number_input(
+                "Spouse Income Growth (%)",
+                min_value=0.0,
+                max_value=10.0,
+                value=3.0,
+                step=0.5,
+                format="%.1f",
+                help="Annual nominal wage growth for spouse"
+            )
     else:
         spouse_retirement_age = spouse_age
+        spouse_employment_growth_rate = 0.0
     
     spouse_social_security = st.sidebar.number_input(
         "Spouse Social Security ($)",
@@ -654,17 +681,23 @@ with tab1:
     if has_spouse:
         col1, col2 = st.columns(2)
         with col1:
+            employment_desc = f"${employment_income:,}"
+            if employment_income > 0 and employment_growth_rate > 0:
+                employment_desc += f" (growing {employment_growth_rate:.1f}%/yr)"
             st.write(f"""
             **Your Income (Annual)**
-            - Employment: ${employment_income:,} (until age {retirement_age})
+            - Employment: {employment_desc} until age {retirement_age}
             - Social Security: ${social_security:,}
             - Pension: ${pension:,}
             - **Your Total**: ${your_income + employment_income:,}
             """)
         with col2:
+            spouse_employment_desc = f"${spouse_employment_income:,}"
+            if spouse_employment_income > 0 and spouse_employment_growth_rate > 0:
+                spouse_employment_desc += f" (growing {spouse_employment_growth_rate:.1f}%/yr)"
             st.write(f"""
             **Spouse Income (Annual)**
-            - Employment: ${spouse_employment_income:,} (until age {spouse_retirement_age})
+            - Employment: {spouse_employment_desc} until age {spouse_retirement_age}
             - Social Security: ${spouse_social_security:,}
             - Pension: ${spouse_pension:,}
             - **Spouse Total**: ${spouse_income + spouse_employment_income:,}
@@ -679,6 +712,10 @@ with tab1:
     - Tax Calculation: PolicyEngine-US (federal + {state} state)
     - **Estimated Gross Withdrawal**: ~${max(0, net_consumption_need * 1.25):,.0f} (before taxes)
     """)
+    
+    # Show note about income growth if applicable
+    if (employment_income > 0 and employment_growth_rate > 0) or (has_spouse and spouse_employment_income > 0 and spouse_employment_growth_rate > 0):
+        st.info("📈 Note: Income growth rates are nominal (includes inflation). For example, 3% growth = ~0% real growth if inflation is 3%.")
     
     if net_consumption_need <= 0:
         st.success("✅ Your guaranteed income covers your consumption needs!")
@@ -766,6 +803,7 @@ with tab2:
                 pension=pension,
                 employment_income=employment_income,
                 retirement_age=retirement_age,
+                employment_growth_rate=employment_growth_rate,
                 has_annuity=has_annuity,
                 annuity_type=annuity_type,
                 annuity_annual=annuity_annual,
@@ -783,6 +821,7 @@ with tab2:
                 spouse_pension=spouse_pension,
                 spouse_employment_income=spouse_employment_income,
                 spouse_retirement_age=spouse_retirement_age,
+                spouse_employment_growth_rate=spouse_employment_growth_rate if has_spouse else 0.0,
                 progress_callback=update_progress
             )
             

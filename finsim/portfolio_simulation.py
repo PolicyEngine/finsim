@@ -21,8 +21,9 @@ def simulate_portfolio(
     # Income sources
     social_security: float,
     pension: float,
-    employment_income: float,  # Wages and salaries
+    employment_income: float,  # Wages and salaries (in today's dollars)
     retirement_age: int,  # Age when employment income stops
+    employment_growth_rate: float = 0.0,  # Annual nominal wage growth (e.g., 0.03 for 3%)
     
     # Annuity parameters
     has_annuity: bool,
@@ -49,6 +50,7 @@ def simulate_portfolio(
     spouse_pension: float = 0,
     spouse_employment_income: float = 0,
     spouse_retirement_age: int = None,
+    spouse_employment_growth_rate: float = 0.0,
     
     # Progress callback
     progress_callback: Optional[callable] = None,
@@ -168,8 +170,14 @@ def simulate_portfolio(
         # Calculate withdrawal needed for consumption AND last year's taxes
         # This is the KEY CHANGE - we pay last year's taxes from this year's withdrawal
         
-        # Employment income (stops at retirement age)
-        wages = employment_income if age < retirement_age else 0
+        # Employment income (stops at retirement age) with growth
+        # Apply compound growth for years worked
+        if age < retirement_age:
+            years_of_growth = year - 1  # Years since start
+            growth_factor = (1 + employment_growth_rate / 100) ** years_of_growth
+            wages = employment_income * growth_factor
+        else:
+            wages = 0
         
         # Spouse income if applicable
         spouse_wages = np.zeros(n_simulations)
@@ -177,9 +185,12 @@ def simulate_portfolio(
         spouse_pens = np.zeros(n_simulations)
         if has_spouse:
             spouse_current_age = spouse_age + year
-            # Spouse employment income (only if alive and working)
+            # Spouse employment income (only if alive and working) with growth
             if spouse_current_age < spouse_retirement_age:
-                spouse_wages = np.where(spouse_alive_mask[:, year], spouse_employment_income, 0)
+                years_of_growth = year - 1  # Years since start
+                growth_factor = (1 + spouse_employment_growth_rate / 100) ** years_of_growth
+                grown_spouse_income = spouse_employment_income * growth_factor
+                spouse_wages = np.where(spouse_alive_mask[:, year], grown_spouse_income, 0)
             # Spouse SS and pension (only if alive)
             spouse_ss = np.where(spouse_alive_mask[:, year], spouse_social_security, 0)
             spouse_pens = np.where(spouse_alive_mask[:, year], spouse_pension, 0)
