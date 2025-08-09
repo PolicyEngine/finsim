@@ -23,7 +23,6 @@ def simulate_portfolio(
     pension: float,
     employment_income: float,  # Wages and salaries (in today's dollars)
     retirement_age: int,  # Age when employment income stops
-    employment_growth_rate: float = 0.0,  # Annual nominal wage growth (e.g., 0.03 for 3%)
     
     # Annuity parameters
     has_annuity: bool,
@@ -41,6 +40,9 @@ def simulate_portfolio(
     
     # Tax parameters
     state: str,
+    
+    # Optional parameters with defaults
+    employment_growth_rate: float = 0.0,  # Annual nominal wage growth (e.g., 0.03 for 3%)
     
     # Spouse parameters (optional)
     has_spouse: bool = False,

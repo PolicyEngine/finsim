@@ -803,7 +803,6 @@ with tab2:
                 pension=pension,
                 employment_income=employment_income,
                 retirement_age=retirement_age,
-                employment_growth_rate=employment_growth_rate,
                 has_annuity=has_annuity,
                 annuity_type=annuity_type,
                 annuity_annual=annuity_annual,
@@ -813,6 +812,7 @@ with tab2:
                 return_volatility=return_volatility,
                 dividend_yield=dividend_yield,
                 state=state,
+                employment_growth_rate=employment_growth_rate,  # Now after required params
                 gender=gender,
                 has_spouse=has_spouse,
                 spouse_age=spouse_age,
