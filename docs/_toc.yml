@@ -1,0 +1,11 @@
+# Table of contents
+format: jb-book
+root: intro
+chapters:
+  - file: quickstart
+  - file: monte_carlo
+  - file: tax_calculations
+  - file: annuities
+  - file: examples
+  - file: api
+  - file: contributing

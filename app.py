@@ -5,9 +5,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from monte_carlo import MonteCarloSimulator
-from tax_calculator import TaxCalculator
-from annuity import AnnuityCalculator
+from finsim import MonteCarloSimulator, TaxCalculator, AnnuityCalculator
 
 
 # Page config
