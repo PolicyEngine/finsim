@@ -33,7 +33,8 @@ def validate_inputs(
     dividend_yield: float,
     state: str,
     gender: str,
-    annuity_type: str,
+    annuity_type: str = "Life Only",
+    has_annuity: bool = False,
     spouse_age: int | None = None,
     spouse_gender: str | None = None,
     spouse_social_security: float | None = None,
@@ -201,12 +202,13 @@ def validate_inputs(
     if gender not in VALID_GENDERS:
         raise ValueError(f"Invalid gender '{gender}'. Must be 'Male' or 'Female'")
 
-    # Validate annuity type
-    VALID_ANNUITY_TYPES = ["Life Only", "Life Contingent with Guarantee", "Fixed Period"]
-    if annuity_type not in VALID_ANNUITY_TYPES:
-        raise ValueError(
-            f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}"
-        )
+    # Validate annuity type only if has_annuity is True
+    if has_annuity:
+        VALID_ANNUITY_TYPES = ["Life Only", "Life Contingent with Guarantee", "Fixed Period"]
+        if annuity_type not in VALID_ANNUITY_TYPES:
+            raise ValueError(
+                f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}"
+            )
 
     # Validate spouse parameters if has_spouse
     if has_spouse:
@@ -272,11 +274,6 @@ def simulate_portfolio(
     pension: float,
     employment_income: float,  # Wages and salaries (in today's dollars)
     retirement_age: int,  # Age when employment income stops
-    # Annuity parameters
-    has_annuity: bool,
-    annuity_type: str,
-    annuity_annual: float,
-    annuity_guarantee_years: int,
     # Consumption
     annual_consumption: float,  # Total consumption need (not net)
     # Market parameters
@@ -285,6 +282,11 @@ def simulate_portfolio(
     dividend_yield: float,
     # Tax parameters
     state: str,
+    # Annuity parameters
+    has_annuity: bool,
+    annuity_type: str = "Life Only",  # Default to Life Only if not specified
+    annuity_annual: float = 0,
+    annuity_guarantee_years: int = 0,
     # Optional parameters with defaults
     employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
     # Spouse parameters (optional)
@@ -335,6 +337,7 @@ def simulate_portfolio(
         state=state,
         gender=gender,
         annuity_type=annuity_type,
+        has_annuity=has_annuity,
         spouse_age=spouse_age,
         spouse_gender=spouse_gender,
         spouse_social_security=spouse_social_security,

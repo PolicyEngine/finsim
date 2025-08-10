@@ -28,6 +28,7 @@ class TestInputValidation:
             "state": "CA",
             "gender": "Male",
             "annuity_type": "Life Only",
+            "has_annuity": False,
             "has_spouse": False,
         }
 
@@ -164,12 +165,30 @@ class TestInputValidation:
         with pytest.raises(ValueError, match="Invalid gender"):
             validate_inputs(**params)
 
-    def test_invalid_annuity_type(self):
-        """Test that invalid annuity_type raises ValueError."""
+    def test_invalid_annuity_type_with_annuity(self):
+        """Test that invalid annuity_type raises ValueError when has_annuity=True."""
         params = self.get_valid_params()
+        params["has_annuity"] = True
+        params["annuity_annual"] = 10_000
         params["annuity_type"] = "Unknown Type"
         with pytest.raises(ValueError, match="Invalid annuity_type"):
             validate_inputs(**params)
+    
+    def test_none_annuity_type_without_annuity(self):
+        """Test that annuity_type=None is allowed when has_annuity=False."""
+        params = self.get_valid_params()
+        params["has_annuity"] = False
+        params["annuity_type"] = None
+        # Should not raise any exception
+        validate_inputs(**params)
+    
+    def test_invalid_annuity_type_without_annuity(self):
+        """Test that invalid annuity_type is ignored when has_annuity=False."""
+        params = self.get_valid_params()
+        params["has_annuity"] = False
+        params["annuity_type"] = "Invalid Type"
+        # Should not raise any exception - annuity_type is ignored
+        validate_inputs(**params)
 
     def test_spouse_without_required_fields(self):
         """Test that has_spouse=True without spouse_age raises ValueError."""
