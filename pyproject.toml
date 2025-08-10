@@ -34,7 +34,6 @@ dependencies = [
     "scipy>=1.10.0",
     "policyengine-us>=1.0.0",
     "pyvis>=0.3.2",  # Required by policyengine-core
-    "mortality @ git+https://github.com/PolicyEngine/mortality.git@master",
 ]
 
 [project.optional-dependencies]
