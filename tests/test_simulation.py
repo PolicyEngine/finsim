@@ -1,6 +1,5 @@
 """Tests for main simulation module."""
 
-import numpy as np
 import pytest
 
 from finsim.simulation import RetirementSimulation, SimulationConfig
