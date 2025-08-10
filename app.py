@@ -727,7 +727,7 @@ with tab1:
     st.markdown("---")
     # Create a hash of current parameters to detect changes
     import hashlib
-    param_string = f"{n_simulations}{n_years}{initial_portfolio}{current_age}{social_security}{pension}{employment_income}{retirement_age}{annual_consumption}{expected_return}{return_volatility}{dividend_yield}{state}{has_annuity}{annuity_annual}{has_spouse}"
+    param_string = f"{n_simulations}{max_age}{initial_portfolio}{current_age}{social_security}{pension}{employment_income}{retirement_age}{annual_consumption}{expected_return}{return_volatility}{dividend_yield}{state}{has_annuity}{annuity_annual}{has_spouse}"
     param_hash = hashlib.md5(param_string.encode()).hexdigest()
     
     # Check if parameters have changed
