@@ -725,9 +725,20 @@ with tab1:
     
     # Add simulation button in tab1
     st.markdown("---")
+    # Create a hash of current parameters to detect changes
+    import hashlib
+    param_string = f"{n_simulations}{n_years}{initial_portfolio}{current_age}{social_security}{pension}{employment_income}{retirement_age}{annual_consumption}{expected_return}{return_volatility}{dividend_yield}{state}{has_annuity}{annuity_annual}{has_spouse}"
+    param_hash = hashlib.md5(param_string.encode()).hexdigest()
+    
+    # Check if parameters have changed
+    if 'last_param_hash' in st.session_state and st.session_state.last_param_hash != param_hash:
+        st.session_state.simulation_run = False  # Invalidate old results
+        st.warning("⚠️ Parameters have changed. Please run a new simulation.")
+    
     st.info("💡 Click 'Run Simulation' to generate results, then check the **Results** tab")
     if st.button("🎲 Run Simulation", type="primary", key="run_sim"):
         st.session_state.simulation_run = True
+        st.session_state.last_param_hash = param_hash
         st.rerun()  # Force rerun to update tab2
 
 with tab2:
@@ -844,6 +855,17 @@ with tab2:
             
             # Percentiles over time (5th, 50th, 95th for 90% CI)
             percentiles = np.percentile(portfolio_paths, [5, 50, 95], axis=0)
+            
+            # Display income summary for transparency
+            st.info(f"""
+            **📊 Simulation Parameters**
+            - Annual Spending: ${annual_consumption:,}
+            - Social Security: ${social_security:,}/year (with COLA)
+            - Pension: ${pension:,}/year
+            - Employment: ${employment_income:,}/year until age {retirement_age if employment_income > 0 else 'N/A'}
+            - Annuity: ${annuity_annual if has_annuity else 0:,}/year
+            - **Initial Portfolio Withdrawal: ${max(0, annual_consumption - social_security - pension - (employment_income if current_age < retirement_age else 0) - (annuity_annual if has_annuity else 0)):,}/year**
+            """)
             
             # Display key metrics
             col1, col2, col3, col4 = st.columns(4)
