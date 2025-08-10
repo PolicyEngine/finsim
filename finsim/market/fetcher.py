@@ -79,7 +79,7 @@ class MarketDataFetcher:
             self._save_to_cache(cache_key, fund_data)
             return fund_data
         except Exception as e:
-            raise ValueError(f"Failed to fetch data for {ticker}: {e}")
+            raise ValueError(f"Failed to fetch data for {ticker}: {e}") from e
 
     def _fetch_from_yfinance(self, ticker: str, years: int, inflation_rate: float) -> FundData:
         """Fetch data from yfinance.
@@ -94,8 +94,8 @@ class MarketDataFetcher:
         """
         try:
             import yfinance as yf
-        except ImportError:
-            raise ImportError("yfinance required for market data fetching")
+        except ImportError as e:
+            raise ImportError("yfinance required for market data fetching") from e
 
         # Fetch historical data
         fund = yf.Ticker(ticker)
