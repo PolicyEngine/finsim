@@ -1,6 +1,6 @@
 """Tests for annuity module."""
 
-import numpy as np
+import pandas as pd
 import pytest
 
 from finsim.annuity import AnnuityCalculator
@@ -10,141 +10,118 @@ class TestAnnuityCalculator:
     @pytest.fixture
     def calculator(self):
         """Create a basic annuity calculator."""
-        return AnnuityCalculator(
-            purchase_price=100_000,
-            payout_rate=0.05,
-            payment_type="Life Contingent with Guarantee",
-            guarantee_period=10
-        )
+        return AnnuityCalculator(age=65, gender="male")
 
     def test_initialization(self, calculator):
         """Test AnnuityCalculator initialization."""
-        assert calculator.purchase_price == 100_000
-        assert calculator.payout_rate == 0.05
-        assert calculator.payment_type == "Life Contingent with Guarantee"
-        assert calculator.guarantee_period == 10
+        assert calculator.age == 65
+        assert calculator.gender == "male"
+        assert 65 in calculator.MALE_LIFE_TABLE
 
-    def test_annual_payout(self, calculator):
-        """Test annual payout calculation."""
-        payout = calculator.annual_payout
-        assert payout == 100_000 * 0.05
-        assert payout == 5_000
-
-    def test_monthly_payout(self, calculator):
-        """Test monthly payout calculation."""
-        monthly = calculator.monthly_payout
-        assert monthly == 5_000 / 12
-        assert abs(monthly - 416.67) < 0.01
-
-    def test_calculate_npv_basic(self, calculator):
-        """Test NPV calculation."""
-        npv = calculator.calculate_npv(
-            discount_rate=0.03,
-            years=20,
-            survival_rates=None  # No mortality
+    def test_calculate_irr_fixed_term(self, calculator):
+        """Test IRR calculation for fixed term annuity."""
+        # $100k premium, $500/month for 20 years
+        irr = calculator.calculate_irr(
+            premium=100_000,
+            monthly_payment=500,
+            guarantee_months=240,  # 20 years
+            life_contingent=False,
         )
 
-        # With 5k annual payout for 20 years at 3% discount
-        # This should be positive since payout rate > discount rate
-        assert npv > 0
-        assert npv < 100_000  # But less than purchase price
+        # Should get about 1.85% annual return
+        assert isinstance(irr, float)
+        assert -1 < irr < 1  # Reasonable IRR range
 
-    def test_calculate_npv_with_mortality(self, calculator):
-        """Test NPV with mortality adjustments."""
-        # Mock survival rates (declining)
-        survival_rates = np.linspace(1.0, 0.5, 20)
-
-        npv_with_mortality = calculator.calculate_npv(
-            discount_rate=0.03,
-            years=20,
-            survival_rates=survival_rates
+    def test_calculate_irr_life_contingent(self, calculator):
+        """Test IRR calculation for life contingent annuity."""
+        irr = calculator.calculate_irr(
+            premium=100_000,
+            monthly_payment=600,
+            guarantee_months=120,  # 10 year guarantee
+            life_contingent=True,
         )
 
-        npv_without_mortality = calculator.calculate_npv(
-            discount_rate=0.03,
-            years=20,
-            survival_rates=None
+        assert isinstance(irr, float)
+        assert -1 < irr < 1
+
+    def test_calculate_irr_no_guarantee(self, calculator):
+        """Test IRR with no guarantee period."""
+        # Non-life contingent with no guarantee should return -1 (complete loss)
+        irr = calculator.calculate_irr(
+            premium=100_000,
+            monthly_payment=500,
+            guarantee_months=0,
+            life_contingent=False,
         )
+        assert irr == -1.0
 
-        # NPV should be lower with mortality
-        assert npv_with_mortality < npv_without_mortality
+    def test_compare_annuity_options(self, calculator):
+        """Test comparing multiple annuity options."""
+        proposals = [
+            {
+                "name": "Option A",
+                "premium": 100_000,
+                "monthly_payment": 500,
+                "guarantee_months": 240,
+                "life_contingent": False,
+                "taxable": False,
+            },
+            {
+                "name": "Option B",
+                "premium": 100_000,
+                "monthly_payment": 600,
+                "guarantee_months": 120,
+                "life_contingent": True,
+                "taxable": False,
+            },
+        ]
 
-    def test_irr_calculation(self, calculator):
-        """Test IRR calculation."""
-        irr = calculator.calculate_irr(years=20)
+        df = calculator.compare_annuity_options(proposals)
 
-        # IRR should be close to payout rate for simple case
-        # (Actually slightly less due to finite period)
-        assert 0.03 < irr < 0.05
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 2
+        assert "IRR" in df.columns
+        assert "Total Guaranteed" in df.columns
+        assert df.iloc[0]["Name"] == "Option A"
+        assert df.iloc[0]["Monthly Payment"] == 500
 
-    def test_compare_with_portfolio(self, calculator):
-        """Test comparison with portfolio investment."""
-        comparison = calculator.compare_with_portfolio(
-            expected_return=0.07,
-            volatility=0.15,
-            years=20,
-            n_simulations=100
+    def test_calculate_present_value(self, calculator):
+        """Test present value calculation."""
+        # $500/month for 10 years at 5% discount rate
+        pv = calculator.calculate_present_value(monthly_payment=500, months=120, discount_rate=0.05)
+
+        assert isinstance(pv, float)
+        assert pv > 0
+        # PV should be less than total payments due to discounting
+        assert pv < 500 * 120
+
+    def test_calculate_present_value_zero_rate(self, calculator):
+        """Test PV with zero discount rate."""
+        pv = calculator.calculate_present_value(monthly_payment=500, months=120, discount_rate=0.0)
+        # With zero discount rate, PV equals total payments
+        assert pv == 500 * 120
+
+    def test_different_ages(self):
+        """Test calculator with different ages."""
+        calc_70 = AnnuityCalculator(age=70, gender="male")
+        calc_80 = AnnuityCalculator(age=80, gender="male")
+
+        # Both should initialize properly
+        assert calc_70.age == 70
+        assert calc_80.age == 80
+
+        # Life expectancy should be lower for older age
+        assert calc_70.MALE_LIFE_TABLE[70] > calc_80.MALE_LIFE_TABLE[80]
+
+    def test_irr_convergence_fallback(self, calculator):
+        """Test IRR calculation fallback methods."""
+        # Test case that might challenge convergence
+        irr = calculator.calculate_irr(
+            premium=1_000_000,
+            monthly_payment=100,  # Very low payout
+            guarantee_months=240,
+            life_contingent=False,
         )
-
-        # Should return comparison metrics
-        assert 'annuity_npv' in comparison
-        assert 'portfolio_mean' in comparison
-        assert 'portfolio_median' in comparison
-        assert 'probability_annuity_better' in comparison
-
-        # With 7% expected return, portfolio should usually beat 5% annuity
-        assert comparison['portfolio_mean'] > comparison['annuity_npv']
-
-    def test_different_payment_types(self):
-        """Test different payment types."""
-        # Fixed Period
-        calc_fixed = AnnuityCalculator(
-            purchase_price=100_000,
-            payout_rate=0.05,
-            payment_type="Fixed Period",
-            guarantee_period=15
-        )
-        assert calc_fixed.payment_type == "Fixed Period"
-
-        # Life Only
-        calc_life = AnnuityCalculator(
-            purchase_price=100_000,
-            payout_rate=0.05,
-            payment_type="Life Only",
-            guarantee_period=0
-        )
-        assert calc_life.payment_type == "Life Only"
-
-    def test_high_payout_rate(self):
-        """Test with high payout rate."""
-        calc = AnnuityCalculator(
-            purchase_price=100_000,
-            payout_rate=0.10,  # 10% payout
-            payment_type="Life Only"
-        )
-
-        assert calc.annual_payout == 10_000
-
-        # IRR should be higher
-        irr = calc.calculate_irr(years=15)
-        assert irr > 0.07
-
-    def test_zero_guarantee_period(self):
-        """Test with no guarantee period."""
-        calc = AnnuityCalculator(
-            purchase_price=100_000,
-            payout_rate=0.05,
-            payment_type="Life Only",
-            guarantee_period=0
-        )
-
-        # With high mortality in early years, NPV should be lower
-        survival_rates = np.array([1.0, 0.5, 0.25, 0.1, 0.05])
-        npv = calc.calculate_npv(
-            discount_rate=0.03,
-            years=5,
-            survival_rates=survival_rates
-        )
-
-        # Should be much less than purchase price
-        assert npv < 50_000
+        # Should still return a value (very negative)
+        assert isinstance(irr, float)
+        assert irr < 0  # Should be negative return

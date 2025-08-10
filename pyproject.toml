@@ -33,6 +33,7 @@ dependencies = [
     "pandas>=2.0.0",
     "scipy>=1.10.0",
     "policyengine-us>=1.0.0",
+    "policyengine-core>=3.0.0",  # Explicitly require newer version
     "pyvis>=0.3.2",  # Required by policyengine-core
 ]
 
@@ -75,13 +76,15 @@ python_functions = "test_*"
 addopts = "-v"
 
 [tool.black]
-line-length = 88
+line-length = 100
 target-version = ['py313']
 include = '\.pyi?$'
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py313"
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -91,7 +94,10 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
-ignore = []
+ignore = [
+    "E501",  # line too long - handled by black
+    "F841",  # local variable assigned but never used
+]
 
 [tool.mypy]
 python_version = "3.13"

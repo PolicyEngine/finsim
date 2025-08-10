@@ -1,5 +1,5 @@
 """Market data and modeling module."""
 
-from .fetcher import MarketDataFetcher, FundData
+from .fetcher import FundData, MarketDataFetcher
 
-__all__ = ['MarketDataFetcher', 'FundData']
+__all__ = ["MarketDataFetcher", "FundData"]
