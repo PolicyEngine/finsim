@@ -2,9 +2,14 @@
 
 import numpy as np
 from typing import Dict, Optional
-from scipy import stats
 from .tax import TaxCalculator
-from .mortality import get_mortality_rates
+from .mortality import get_mortality_rates  # Keep local for now as fallback
+try:
+    from mortality import MortalityTable  # Try to use the package
+    USE_MORTALITY_PACKAGE = True
+except ImportError:
+    USE_MORTALITY_PACKAGE = False
+    from .mortality_enhanced import EnhancedMortality
 from .return_generator import ReturnGenerator
 
 
@@ -42,7 +47,7 @@ def simulate_portfolio(
     state: str,
     
     # Optional parameters with defaults
-    employment_growth_rate: float = 0.0,  # Annual nominal wage growth (e.g., 0.03 for 3%)
+    employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
     
     # Spouse parameters (optional)
     has_spouse: bool = False,
@@ -58,7 +63,16 @@ def simulate_portfolio(
     progress_callback: Optional[callable] = None,
     
     # Gender for primary person (optional, defaults to Male)
-    gender: str = "Male"
+    gender: str = "Male",
+    
+    # Enhanced mortality parameters (optional)
+    use_enhanced_mortality: bool = False,
+    smoker: Optional[bool] = None,
+    income_percentile: Optional[int] = None,
+    health_status: Optional[str] = None,
+    spouse_smoker: Optional[bool] = None,
+    spouse_income_percentile: Optional[int] = None,
+    spouse_health_status: Optional[str] = None
 ) -> Dict[str, np.ndarray]:
     """
     Run Monte Carlo simulation with next-year tax payment.
@@ -73,8 +87,48 @@ def simulate_portfolio(
     tax_calc = TaxCalculator(state=state, year=2025)
     
     # Get mortality rates if needed
-    mortality_rates = get_mortality_rates(gender) if include_mortality else {}
-    spouse_mortality_rates = get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
+    if USE_MORTALITY_PACKAGE and include_mortality:
+        # Use the mortality package for clean SSA tables
+        gender_lower = gender.lower() if gender else "male"
+        table = MortalityTable(gender_lower)
+        mortality_rates = {age: table.get_rate(age) 
+                          for age in range(current_age, min(current_age + n_years + 1, 121))}
+        
+        if has_spouse:
+            spouse_gender_lower = spouse_gender.lower() if spouse_gender else "female"
+            spouse_table = MortalityTable(spouse_gender_lower)
+            spouse_mortality_rates = {age: spouse_table.get_rate(age)
+                                    for age in range(spouse_age, min(spouse_age + n_years + 1, 121))}
+        else:
+            spouse_mortality_rates = {}
+    elif use_enhanced_mortality and include_mortality and not USE_MORTALITY_PACKAGE:
+        # Use enhanced mortality with individual characteristics (fallback)
+        mortality_calculator = EnhancedMortality(
+            gender=gender,
+            use_bayesian=True,
+            smoker=smoker,
+            income_percentile=income_percentile,
+            health_status=health_status
+        )
+        mortality_rates = {age: mortality_calculator.get_mortality_rate(age) 
+                          for age in range(current_age, min(current_age + n_years + 1, 121))}
+        
+        if has_spouse:
+            spouse_mortality_calculator = EnhancedMortality(
+                gender=spouse_gender,
+                use_bayesian=True,
+                smoker=spouse_smoker,
+                income_percentile=spouse_income_percentile,
+                health_status=spouse_health_status
+            )
+            spouse_mortality_rates = {age: spouse_mortality_calculator.get_mortality_rate(age)
+                                    for age in range(spouse_age, min(spouse_age + n_years + 1, 121))}
+        else:
+            spouse_mortality_rates = {}
+    else:
+        # Use basic SSA tables (local fallback)
+        mortality_rates = get_mortality_rates(gender) if include_mortality else {}
+        spouse_mortality_rates = get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
     
     # Generate all returns upfront using the return generator
     # This fixes the bug where returns were getting repeated
@@ -174,8 +228,9 @@ def simulate_portfolio(
         
         # Employment income (stops at retirement age) with growth
         # Apply compound growth for years worked
-        if age < retirement_age:
+        if age <= retirement_age:
             years_of_growth = year - 1  # Years since start
+            # employment_growth_rate is already in percentage form (e.g., 5.0 for 5%)
             growth_factor = (1 + employment_growth_rate / 100) ** years_of_growth
             wages = employment_income * growth_factor
         else:
@@ -188,8 +243,9 @@ def simulate_portfolio(
         if has_spouse:
             spouse_current_age = spouse_age + year
             # Spouse employment income (only if alive and working) with growth
-            if spouse_current_age < spouse_retirement_age:
+            if spouse_current_age <= spouse_retirement_age:
                 years_of_growth = year - 1  # Years since start
+                # spouse_employment_growth_rate is already in percentage form (e.g., 5.0 for 5%)
                 growth_factor = (1 + spouse_employment_growth_rate / 100) ** years_of_growth
                 grown_spouse_income = spouse_employment_income * growth_factor
                 spouse_wages = np.where(spouse_alive_mask[:, year], grown_spouse_income, 0)

@@ -2,7 +2,12 @@
 
 import pytest
 import numpy as np
-from finsim.mortality import get_mortality_rates, calculate_survival_curve, calculate_life_expectancy
+from finsim.mortality import (
+    get_mortality_rates, 
+    get_mortality_rate,
+    calculate_survival_curve, 
+    calculate_life_expectancy
+)
 
 
 class TestMortality:

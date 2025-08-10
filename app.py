@@ -757,14 +757,15 @@ with tab2:
                 if (year % 5 == 0 or year == total_years) and partial_results:
                     if 'portfolio_paths' in partial_results:
                         portfolio_paths_partial = partial_results['portfolio_paths']
-                        # Only use the portion that has been calculated (up to current year)
-                        # Filter out any zero values that haven't been calculated yet
-                        valid_years = min(year + 1, portfolio_paths_partial.shape[1])
-                        portfolio_slice = portfolio_paths_partial[:, :valid_years]
+                        # Only use the portion that has been calculated
+                        # Year 0 is initial, year 1 is after first simulation, etc.
+                        # So when year=5, we have calculated through index 5 (6 values total)
+                        valid_indices = year + 1  # Include initial value + calculated years
+                        portfolio_slice = portfolio_paths_partial[:, :valid_indices]
                         
                         # Calculate percentiles only for valid data
                         current_percentiles = np.percentile(portfolio_slice, [5, 50, 95], axis=0)
-                        years_so_far = np.arange(current_age, current_age + valid_years)
+                        years_so_far = np.arange(current_age, current_age + valid_indices)
                         
                         fig_live = go.Figure()
                         # 90% CI
