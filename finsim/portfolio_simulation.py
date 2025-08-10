@@ -11,6 +11,7 @@ except ImportError:
     USE_MORTALITY_PACKAGE = False
     from .mortality_enhanced import EnhancedMortality
 from .return_generator import ReturnGenerator
+from .cola import get_ssa_cola_factors, get_consumption_inflation_factors
 
 
 def simulate_portfolio(
@@ -48,8 +49,6 @@ def simulate_portfolio(
     
     # Optional parameters with defaults
     employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
-    consumption_inflation_rate: float = 2.5,  # Annual consumption inflation rate (e.g., 2.5 for 2.5% C-CPI-U)
-    social_security_cola_rate: float = 2.3,  # Annual Social Security COLA (e.g., 2.3 for 2.3% based on CPI-W)
     
     # Spouse parameters (optional)
     has_spouse: bool = False,
@@ -87,6 +86,12 @@ def simulate_portfolio(
     # Initialize tax calculator
     filing_status = "JOINT" if has_spouse else "SINGLE"
     tax_calc = TaxCalculator(state=state, year=2025)
+    
+    # Get inflation factors from PolicyEngine-US projections
+    # These use actual SSA uprating (CPI-W) and C-CPI-U schedules
+    START_YEAR = 2025  # TODO: Make this configurable
+    cola_factors = get_ssa_cola_factors(START_YEAR, n_years)
+    inflation_factors = get_consumption_inflation_factors(START_YEAR, n_years)
     
     # Get mortality rates if needed
     if USE_MORTALITY_PACKAGE and include_mortality:
@@ -255,10 +260,9 @@ def simulate_portfolio(
             spouse_ss = np.where(spouse_alive_mask[:, year], spouse_social_security, 0)
             spouse_pens = np.where(spouse_alive_mask[:, year], spouse_pension, 0)
         
-        # Apply COLA to Social Security benefits (using CPI-W based adjustment)
+        # Apply COLA to Social Security using actual SSA uprating schedule
         # Note: Pensions typically don't have COLA unless specified
-        years_of_cola = year - 1  # Years since start
-        cola_factor = (1 + social_security_cola_rate / 100) ** years_of_cola
+        cola_factor = cola_factors[year - 1]  # Get pre-calculated factor
         
         # Apply COLA to Social Security (but not pensions, which typically don't have COLA)
         current_social_security = social_security * cola_factor
@@ -271,10 +275,8 @@ def simulate_portfolio(
         guaranteed_income = total_ss_pension + annuity_income[:, year-1] + total_employment
         total_income_available = guaranteed_income + dividends
         
-        # Calculate inflation-adjusted consumption for this year
-        # Consumption grows with inflation (C-CPI-U)
-        years_of_inflation = year - 1  # Years since start
-        inflation_factor = (1 + consumption_inflation_rate / 100) ** years_of_inflation
+        # Calculate inflation-adjusted consumption using actual C-CPI-U projections
+        inflation_factor = inflation_factors[year - 1]  # Get pre-calculated factor
         current_consumption = annual_consumption * inflation_factor
         
         # What we need to withdraw = inflation-adjusted consumption + last year's taxes - available income
