@@ -88,9 +88,7 @@ class TestAnnuityCalculator:
     def test_calculate_present_value(self, calculator):
         """Test present value calculation."""
         # $500/month for 10 years at 5% discount rate
-        pv = calculator.calculate_present_value(
-            monthly_payment=500, months=120, discount_rate=0.05
-        )
+        pv = calculator.calculate_present_value(monthly_payment=500, months=120, discount_rate=0.05)
 
         assert isinstance(pv, float)
         assert pv > 0
@@ -99,9 +97,7 @@ class TestAnnuityCalculator:
 
     def test_calculate_present_value_zero_rate(self, calculator):
         """Test PV with zero discount rate."""
-        pv = calculator.calculate_present_value(
-            monthly_payment=500, months=120, discount_rate=0.0
-        )
+        pv = calculator.calculate_present_value(monthly_payment=500, months=120, discount_rate=0.0)
         # With zero discount rate, PV equals total payments
         assert pv == 500 * 120
 
