@@ -157,10 +157,10 @@ else:
 social_security = st.sidebar.number_input(
     "Annual Social Security ($)" if not has_spouse else "Your Social Security ($)",
     min_value=0,
-    value=24_000,
+    value=0,  # Default to 0 to avoid confusion
     step=1_000,
     format="%d",
-    help="Annual Social Security benefits (in today's dollars)"
+    help="Annual Social Security benefits (in today's dollars, with automatic COLA adjustments)"
 )
 
 pension = st.sidebar.number_input(
