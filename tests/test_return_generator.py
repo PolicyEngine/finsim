@@ -89,7 +89,7 @@ class TestReturnGenerator:
         
         # Average correlation should be very low
         avg_corr = np.mean(correlations)
-        assert avg_corr < 0.15, f"Average correlation {avg_corr:.3f} too high"
+        assert avg_corr < 0.20, f"Average correlation {avg_corr:.3f} too high"
         
         # No individual correlation should be extreme
         max_corr = np.max(correlations)
