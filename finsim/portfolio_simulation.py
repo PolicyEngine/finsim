@@ -14,6 +14,173 @@ from .return_generator import ReturnGenerator
 from .cola import get_ssa_cola_factors, get_consumption_inflation_factors
 
 
+def validate_inputs(
+    n_simulations: int,
+    n_years: int,
+    initial_portfolio: float,
+    current_age: int,
+    social_security: float,
+    pension: float,
+    employment_income: float,
+    retirement_age: int,
+    annuity_annual: float,
+    annuity_guarantee_years: int,
+    annual_consumption: float,
+    expected_return: float,
+    return_volatility: float,
+    dividend_yield: float,
+    state: str,
+    gender: str,
+    annuity_type: str,
+    spouse_age: Optional[int] = None,
+    spouse_gender: Optional[str] = None,
+    spouse_social_security: Optional[float] = None,
+    spouse_pension: Optional[float] = None,
+    spouse_employment_income: Optional[float] = None,
+    spouse_retirement_age: Optional[int] = None,
+    has_spouse: bool = False,
+) -> None:
+    """Validate all input parameters for portfolio simulation.
+    
+    Raises:
+        ValueError: If any input parameter is invalid.
+    """
+    # Validate basic parameters
+    if n_simulations <= 0:
+        raise ValueError(f"n_simulations must be positive, got {n_simulations}")
+    if n_simulations > 100000:
+        raise ValueError(f"n_simulations too large ({n_simulations}), maximum is 100,000")
+    
+    if n_years <= 0:
+        raise ValueError(f"n_years must be positive, got {n_years}")
+    if n_years > 100:
+        raise ValueError(f"n_years too large ({n_years}), maximum is 100")
+    
+    if initial_portfolio < 0:
+        raise ValueError(f"initial_portfolio cannot be negative, got {initial_portfolio}")
+    if initial_portfolio > 1e10:
+        raise ValueError(f"initial_portfolio too large ({initial_portfolio:.0f}), maximum is $10 billion")
+    
+    # Validate age parameters
+    if current_age < 18:
+        raise ValueError(f"current_age must be at least 18, got {current_age}")
+    if current_age > 120:
+        raise ValueError(f"current_age cannot exceed 120, got {current_age}")
+    
+    if retirement_age < current_age:
+        raise ValueError(f"retirement_age ({retirement_age}) cannot be less than current_age ({current_age})")
+    if retirement_age > 100:
+        raise ValueError(f"retirement_age cannot exceed 100, got {retirement_age}")
+    
+    # Validate income sources
+    if social_security < 0:
+        raise ValueError(f"social_security cannot be negative, got {social_security}")
+    if social_security > 200000:
+        raise ValueError(f"social_security seems unrealistic ({social_security}), maximum expected is $200,000")
+    
+    if pension < 0:
+        raise ValueError(f"pension cannot be negative, got {pension}")
+    if pension > 1000000:
+        raise ValueError(f"pension seems unrealistic ({pension}), maximum expected is $1,000,000")
+    
+    if employment_income < 0:
+        raise ValueError(f"employment_income cannot be negative, got {employment_income}")
+    if employment_income > 10000000:
+        raise ValueError(f"employment_income seems unrealistic ({employment_income}), maximum expected is $10,000,000")
+    
+    # Validate annuity parameters
+    if annuity_annual < 0:
+        raise ValueError(f"annuity_annual cannot be negative, got {annuity_annual}")
+    if annuity_annual > 1000000:
+        raise ValueError(f"annuity_annual seems unrealistic ({annuity_annual}), maximum expected is $1,000,000")
+    
+    if annuity_guarantee_years < 0:
+        raise ValueError(f"annuity_guarantee_years cannot be negative, got {annuity_guarantee_years}")
+    if annuity_guarantee_years > 50:
+        raise ValueError(f"annuity_guarantee_years too large ({annuity_guarantee_years}), maximum is 50")
+    
+    # Validate consumption
+    if annual_consumption < 0:
+        raise ValueError(f"annual_consumption cannot be negative, got {annual_consumption}")
+    if annual_consumption > 10000000:
+        raise ValueError(f"annual_consumption seems unrealistic ({annual_consumption}), maximum expected is $10,000,000")
+    
+    # Validate market parameters
+    if expected_return < -0.5:
+        raise ValueError(f"expected_return too low ({expected_return}), minimum is -50%")
+    if expected_return > 0.5:
+        raise ValueError(f"expected_return too high ({expected_return}), maximum is 50%")
+    
+    if return_volatility < 0:
+        raise ValueError(f"return_volatility cannot be negative, got {return_volatility}")
+    if return_volatility > 1.0:
+        raise ValueError(f"return_volatility too high ({return_volatility}), maximum is 100%")
+    
+    if dividend_yield < 0:
+        raise ValueError(f"dividend_yield cannot be negative, got {dividend_yield}")
+    if dividend_yield > 0.2:
+        raise ValueError(f"dividend_yield too high ({dividend_yield}), maximum is 20%")
+    
+    # Validate state
+    VALID_STATES = [
+        'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+        'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+        'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+        'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+        'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'
+    ]
+    if state not in VALID_STATES:
+        raise ValueError(f"Invalid state '{state}'. Must be one of: {', '.join(VALID_STATES)}")
+    
+    # Validate gender
+    VALID_GENDERS = ['Male', 'Female']
+    if gender not in VALID_GENDERS:
+        raise ValueError(f"Invalid gender '{gender}'. Must be 'Male' or 'Female'")
+    
+    # Validate annuity type
+    VALID_ANNUITY_TYPES = ['Life Only', 'Life Contingent with Guarantee', 'Fixed Period']
+    if annuity_type not in VALID_ANNUITY_TYPES:
+        raise ValueError(f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}")
+    
+    # Validate spouse parameters if has_spouse
+    if has_spouse:
+        if spouse_age is None:
+            raise ValueError("spouse_age is required when has_spouse=True")
+        if spouse_age < 18:
+            raise ValueError(f"spouse_age must be at least 18, got {spouse_age}")
+        if spouse_age > 120:
+            raise ValueError(f"spouse_age cannot exceed 120, got {spouse_age}")
+        
+        if spouse_gender is None:
+            raise ValueError("spouse_gender is required when has_spouse=True")
+        if spouse_gender not in VALID_GENDERS:
+            raise ValueError(f"Invalid spouse_gender '{spouse_gender}'. Must be 'Male' or 'Female'")
+        
+        if spouse_social_security is not None:
+            if spouse_social_security < 0:
+                raise ValueError(f"spouse_social_security cannot be negative, got {spouse_social_security}")
+            if spouse_social_security > 200000:
+                raise ValueError(f"spouse_social_security seems unrealistic ({spouse_social_security})")
+        
+        if spouse_pension is not None:
+            if spouse_pension < 0:
+                raise ValueError(f"spouse_pension cannot be negative, got {spouse_pension}")
+            if spouse_pension > 1000000:
+                raise ValueError(f"spouse_pension seems unrealistic ({spouse_pension})")
+        
+        if spouse_employment_income is not None:
+            if spouse_employment_income < 0:
+                raise ValueError(f"spouse_employment_income cannot be negative, got {spouse_employment_income}")
+            if spouse_employment_income > 10000000:
+                raise ValueError(f"spouse_employment_income seems unrealistic ({spouse_employment_income})")
+        
+        if spouse_retirement_age is not None:
+            if spouse_retirement_age < spouse_age:
+                raise ValueError(f"spouse_retirement_age ({spouse_retirement_age}) cannot be less than spouse_age ({spouse_age})")
+            if spouse_retirement_age > 100:
+                raise ValueError(f"spouse_retirement_age cannot exceed 100, got {spouse_retirement_age}")
+
+
 def simulate_portfolio(
     # Basic parameters
     n_simulations: int,
@@ -82,6 +249,33 @@ def simulate_portfolio(
     then pay taxes the following year from that year's withdrawal.
     This is more realistic and avoids circular dependency.
     """
+    # Validate all inputs
+    validate_inputs(
+        n_simulations=n_simulations,
+        n_years=n_years,
+        initial_portfolio=initial_portfolio,
+        current_age=current_age,
+        social_security=social_security,
+        pension=pension,
+        employment_income=employment_income,
+        retirement_age=retirement_age,
+        annuity_annual=annuity_annual,
+        annuity_guarantee_years=annuity_guarantee_years,
+        annual_consumption=annual_consumption,
+        expected_return=expected_return / 100.0,  # Convert from percentage
+        return_volatility=return_volatility / 100.0,  # Convert from percentage
+        dividend_yield=dividend_yield / 100.0,  # Convert from percentage
+        state=state,
+        gender=gender,
+        annuity_type=annuity_type,
+        spouse_age=spouse_age,
+        spouse_gender=spouse_gender,
+        spouse_social_security=spouse_social_security,
+        spouse_pension=spouse_pension,
+        spouse_employment_income=spouse_employment_income,
+        spouse_retirement_age=spouse_retirement_age,
+        has_spouse=has_spouse,
+    )
     
     # Initialize tax calculator
     filing_status = "JOINT" if has_spouse else "SINGLE"
