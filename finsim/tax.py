@@ -190,7 +190,7 @@ class TaxCalculator:
             employment_income_array=np.array([employment_income]),
             dividend_income_array=np.array([dividend_income]),
         )
-        
+
         # Extract single values from arrays
         return {
             "federal_tax": results["federal_income_tax"][0],
