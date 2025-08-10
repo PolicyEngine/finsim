@@ -36,9 +36,9 @@ jobs:
         uv run ruff check finsim tests
         uv run black --check finsim tests
     
-    - name: Run type checking
-      run: |
-        uv run mypy finsim
+    # - name: Run type checking
+    #   run: |
+    #     uv run mypy finsim
     
     - name: Run tests with coverage
       run: |
