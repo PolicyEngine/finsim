@@ -172,6 +172,34 @@ class TaxCalculator:
         self.state = state
         self.year = year
 
+    def calculate_single_tax(
+        self,
+        capital_gains: float,
+        social_security: float,
+        age: int,
+        filing_status: str = "SINGLE",
+        employment_income: float = 0,
+        dividend_income: float = 0,
+    ) -> dict:
+        """Calculate tax for a single scenario (wrapper for batch calculation)."""
+        results = self.calculate_batch_taxes(
+            capital_gains_array=np.array([capital_gains]),
+            social_security_array=np.array([social_security]),
+            ages=np.array([age]),
+            filing_status=filing_status,
+            employment_income_array=np.array([employment_income]),
+            dividend_income_array=np.array([dividend_income]),
+        )
+        
+        # Extract single values from arrays
+        return {
+            "federal_tax": results["federal_income_tax"][0],
+            "state_tax": results["state_income_tax"][0],
+            "total_tax": results["total_tax"][0],
+            "effective_tax_rate": results["effective_tax_rate"][0],
+            "taxable_income": results["taxable_income"][0],
+        }
+
     def calculate_batch_taxes(
         self,
         capital_gains_array: np.ndarray,

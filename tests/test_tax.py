@@ -62,13 +62,13 @@ class TestTaxCalculator:
         )
 
         # Should return arrays of correct length
-        assert len(results["federal_tax"]) == n
-        assert len(results["state_tax"]) == n
+        assert len(results["federal_income_tax"]) == n
+        assert len(results["state_income_tax"]) == n
         assert len(results["total_tax"]) == n
 
         # All taxes should be non-negative
-        assert np.all(results["federal_tax"] >= 0)
-        assert np.all(results["state_tax"] >= 0)
+        assert np.all(results["federal_income_tax"] >= 0)
+        assert np.all(results["state_income_tax"] >= 0)
         assert np.all(results["total_tax"] >= 0)
 
     def test_tax_with_employment_income(self, tax_calculator):

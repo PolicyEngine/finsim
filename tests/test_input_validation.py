@@ -297,8 +297,8 @@ class TestInputValidation:
         params["n_simulations"] = 100_000
         params["n_years"] = 100
         params["initial_portfolio"] = 9_999_999_999
-        params["current_age"] = 120
-        params["retirement_age"] = 100
+        params["current_age"] = 100
+        params["retirement_age"] = 120
         params["expected_return"] = 0.5
         params["return_volatility"] = 1.0
         params["dividend_yield"] = 0.2
