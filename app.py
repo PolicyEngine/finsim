@@ -1344,6 +1344,9 @@ with tab4:
         # Sensitivity analysis
         st.subheader("🎯 What-If Scenarios")
         
+        # Calculate guaranteed income for what-if scenarios
+        guaranteed_income = social_security + pension + (annuity_annual if has_annuity else 0)
+        
         col1, col2 = st.columns(2)
         
         with col1:
