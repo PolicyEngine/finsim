@@ -14,12 +14,14 @@ from .mortality import get_mortality_rates
 class EnhancedMortality:
     """Enhanced mortality calculations with optional adjustments."""
 
-    def __init__(self,
-                 gender: Literal["Male", "Female"] = "Male",
-                 use_bayesian: bool = False,
-                 smoker: bool | None = None,
-                 income_percentile: int | None = None,
-                 health_status: Literal["excellent", "good", "average", "poor"] | None = None):
+    def __init__(
+        self,
+        gender: Literal["Male", "Female"] = "Male",
+        use_bayesian: bool = False,
+        smoker: bool | None = None,
+        income_percentile: int | None = None,
+        health_status: Literal["excellent", "good", "average", "poor"] | None = None,
+    ):
         """Initialize enhanced mortality calculator.
 
         Args:
@@ -80,17 +82,14 @@ class EnhancedMortality:
 
         # Health adjustment
         if self.health_status is not None:
-            health_effects = {
-                "excellent": -0.35,
-                "good": -0.16,
-                "average": 0.0,
-                "poor": 0.26
-            }
+            health_effects = {"excellent": -0.35, "good": -0.16, "average": 0.0, "poor": 0.26}
             # Remove population average (assuming distribution)
-            pop_avg = 0.2 * health_effects["excellent"] + \
-                     0.3 * health_effects["good"] + \
-                     0.3 * health_effects["average"] + \
-                     0.2 * health_effects["poor"]
+            pop_avg = (
+                0.2 * health_effects["excellent"]
+                + 0.3 * health_effects["good"]
+                + 0.3 * health_effects["average"]
+                + 0.2 * health_effects["poor"]
+            )
             log_odds -= pop_avg
             log_odds += health_effects[self.health_status]
 
@@ -113,10 +112,9 @@ class EnhancedMortality:
             rates[:, i] = self.get_mortality_rate(age)
         return rates
 
-    def simulate_survival(self,
-                         starting_age: int,
-                         n_simulations: int,
-                         n_years: int) -> tuple[np.ndarray, np.ndarray]:
+    def simulate_survival(
+        self, starting_age: int, n_simulations: int, n_years: int
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Simulate survival paths.
 
         Args:
@@ -146,7 +144,9 @@ class EnhancedMortality:
             alive_mask[death_this_year, year:] = False
 
             # Record death ages
-            death_ages[death_this_year & (death_ages == starting_age + n_years)] = age + np.random.random()
+            death_ages[death_this_year & (death_ages == starting_age + n_years)] = (
+                age + np.random.random()
+            )
 
         return alive_mask, death_ages
 
@@ -174,11 +174,7 @@ def compare_mortality_approaches():
 
     # Enhanced with good health, high income
     enhanced = EnhancedMortality(
-        gender="Male",
-        use_bayesian=True,
-        smoker=False,
-        income_percentile=80,
-        health_status="good"
+        gender="Male", use_bayesian=True, smoker=False, income_percentile=80, health_status="good"
     )
     enhanced_alive, enhanced_deaths = enhanced.simulate_survival(age, n_sims, n_years)
     enhanced_life_exp = np.mean(enhanced_deaths - age)
@@ -191,11 +187,7 @@ def compare_mortality_approaches():
 
     # Enhanced with poor health, smoker
     poor_health = EnhancedMortality(
-        gender="Male",
-        use_bayesian=True,
-        smoker=True,
-        income_percentile=25,
-        health_status="poor"
+        gender="Male", use_bayesian=True, smoker=True, income_percentile=25, health_status="poor"
     )
     poor_alive, poor_deaths = poor_health.simulate_survival(age, n_sims, n_years)
     poor_life_exp = np.mean(poor_deaths - age)

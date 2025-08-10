@@ -5,15 +5,11 @@ This module provides inflation adjustment using either:
 2. Actual C-CPI-U data from PolicyEngine-US (if available)
 """
 
-
 import numpy as np
 
 
 def get_inflation_factors(
-    start_year: int,
-    n_years: int,
-    fixed_rate: float = 2.5,
-    use_actual_cpi: bool = False
+    start_year: int, n_years: int, fixed_rate: float = 2.5, use_actual_cpi: bool = False
 ) -> np.ndarray:
     """Get inflation factors for each year of simulation.
 
@@ -56,9 +52,9 @@ def get_inflation_factors(
                     except Exception:
                         # If future year, use fixed rate
                         if year > 0:
-                            inflation_factors[year] = (
-                            inflation_factors[year-1] * (1 + fixed_rate / 100)
-                        )
+                            inflation_factors[year] = inflation_factors[year - 1] * (
+                                1 + fixed_rate / 100
+                            )
                         continue
 
                 if base_cpi is None:
@@ -77,16 +73,12 @@ def get_inflation_factors(
 
     # Use fixed rate
     for year in range(1, n_years):
-        inflation_factors[year] = inflation_factors[year-1] * (1 + fixed_rate / 100)
+        inflation_factors[year] = inflation_factors[year - 1] * (1 + fixed_rate / 100)
 
     return inflation_factors
 
 
-def inflate_value(
-    base_value: float,
-    year_index: int,
-    inflation_factors: np.ndarray
-) -> float:
+def inflate_value(base_value: float, year_index: int, inflation_factors: np.ndarray) -> float:
     """Inflate a base value to a specific year.
 
     Args:
@@ -103,10 +95,7 @@ def inflate_value(
     return base_value * inflation_factors[year_index]
 
 
-def calculate_real_return(
-    nominal_return: float,
-    inflation_rate: float
-) -> float:
+def calculate_real_return(nominal_return: float, inflation_rate: float) -> float:
     """Calculate real return from nominal return and inflation.
 
     Uses the Fisher equation: (1 + r_real) = (1 + r_nominal) / (1 + inflation)
@@ -142,4 +131,6 @@ if __name__ == "__main__":
     nominal = 0.07  # 7% nominal
     inflation = 0.025  # 2.5% inflation
     real = calculate_real_return(nominal, inflation)
-    print(f"\nReal return: {nominal*100:.1f}% nominal - {inflation*100:.1f}% inflation = {real*100:.2f}% real")
+    print(
+        f"\nReal return: {nominal*100:.1f}% nominal - {inflation*100:.1f}% inflation = {real*100:.2f}% real"
+    )

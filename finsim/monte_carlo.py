@@ -10,12 +10,14 @@ from .tax import TaxCalculator
 # Optional imports for enhanced features
 try:
     from arch import arch_model
+
     HAS_ARCH = True
 except ImportError:
     HAS_ARCH = False
 
 try:
     import yfinance as yf
+
     HAS_YFINANCE = True
 except ImportError:
     HAS_YFINANCE = False
@@ -41,7 +43,7 @@ class MonteCarloSimulator:
         state: str = "CA",
         filing_status: str = "SINGLE",
         n_simulations: int = 10_000,
-        seed: int | None = None
+        seed: int | None = None,
     ):
         """
         Initialize Monte Carlo simulator.
@@ -77,11 +79,7 @@ class MonteCarloSimulator:
         self.annual_dividend_yield = 0.02
         self.garch_model = None
 
-    def fit_historical(
-        self,
-        ticker: str = "VT",
-        lookback_years: int = 30
-    ) -> None:
+    def fit_historical(self, ticker: str = "VT", lookback_years: int = 30) -> None:
         """
         Fit parameters to historical data.
 
@@ -100,14 +98,14 @@ class MonteCarloSimulator:
             hist = stock.history(start=start_date, end=end_date)
 
             if not hist.empty:
-                returns = hist['Close'].pct_change().dropna()
+                returns = hist["Close"].pct_change().dropna()
                 self.annual_return_mean = returns.mean() * 252
                 self.annual_return_std = returns.std() * np.sqrt(252)
 
                 # Fit GARCH if available
                 if HAS_ARCH:
-                    model = arch_model(returns * 100, vol='GARCH', p=1, q=1)
-                    self.garch_model = model.fit(disp='off')
+                    model = arch_model(returns * 100, vol="GARCH", p=1, q=1)
+                    self.garch_model = model.fit(disp="off")
 
         except Exception as e:
             warnings.warn(f"Historical fitting failed: {e}. Using defaults.")
@@ -117,7 +115,7 @@ class MonteCarloSimulator:
         n_years: int = 30,
         initial_taxable_fraction: float = 0.2,
         taxable_fraction_increase: float = 0.03,
-        cola_rate: float = 0.032
+        cola_rate: float = 0.032,
     ) -> dict:
         """
         Run tax-aware Monte Carlo simulation.
@@ -166,7 +164,9 @@ class MonteCarloSimulator:
 
             # Iterate to find correct gross amount
             for _ in range(5):  # Usually converges in 2-3 iterations
-                capital_gains = np.full(self.n_simulations, gross_annual_withdrawal * taxable_fraction)
+                capital_gains = np.full(
+                    self.n_simulations, gross_annual_withdrawal * taxable_fraction
+                )
                 ss_array = np.full(self.n_simulations, current_ss)
                 age_array = np.full(self.n_simulations, current_age)
 
@@ -174,10 +174,10 @@ class MonteCarloSimulator:
                     capital_gains_array=capital_gains,
                     social_security_array=ss_array,
                     ages=age_array,
-                    filing_status=self.filing_status
+                    filing_status=self.filing_status,
                 )
 
-                avg_tax = np.mean(tax_results['total_tax'])
+                avg_tax = np.mean(tax_results["total_tax"])
                 after_tax = gross_annual_withdrawal - avg_tax
 
                 # Adjust gross withdrawal
@@ -215,23 +215,23 @@ class MonteCarloSimulator:
         total_taxes = taxes_paid.sum(axis=1)
 
         return {
-            'paths': paths,
-            'final_values': final_values,
-            'depletion_month': depletion_month,
-            'depletion_probability': np.mean(depletion_month < np.inf),
-            'percentiles': {
-                'p5': np.percentile(final_values, 5),
-                'p25': np.percentile(final_values, 25),
-                'p50': np.percentile(final_values, 50),
-                'p75': np.percentile(final_values, 75),
-                'p95': np.percentile(final_values, 95)
+            "paths": paths,
+            "final_values": final_values,
+            "depletion_month": depletion_month,
+            "depletion_probability": np.mean(depletion_month < np.inf),
+            "percentiles": {
+                "p5": np.percentile(final_values, 5),
+                "p25": np.percentile(final_values, 25),
+                "p50": np.percentile(final_values, 50),
+                "p75": np.percentile(final_values, 75),
+                "p95": np.percentile(final_values, 95),
             },
-            'gross_withdrawals': gross_withdrawals,
-            'taxes_paid': taxes_paid,
-            'total_withdrawn': total_withdrawn,
-            'total_taxes': total_taxes,
-            'mean_final_value': np.mean(final_values),
-            'median_final_value': np.median(final_values)
+            "gross_withdrawals": gross_withdrawals,
+            "taxes_paid": taxes_paid,
+            "total_withdrawn": total_withdrawn,
+            "total_taxes": total_taxes,
+            "mean_final_value": np.mean(final_values),
+            "median_final_value": np.median(final_values),
         }
 
     def _generate_returns(self, n_months: int) -> np.ndarray:
@@ -240,9 +240,9 @@ class MonteCarloSimulator:
             # GARCH simulation
             returns = np.zeros((self.n_simulations, n_months))
             params = self.garch_model.params
-            omega = params['omega']
-            alpha = params['alpha[1]']
-            beta = params['beta[1]']
+            omega = params["omega"]
+            alpha = params["alpha[1]"]
+            beta = params["beta[1]"]
 
             for sim in range(self.n_simulations):
                 h = np.zeros(n_months + 1)
@@ -252,7 +252,7 @@ class MonteCarloSimulator:
 
                 for t in range(n_months):
                     if t > 0:
-                        h[t] = omega + alpha * (returns[sim, t-1]**2) + beta * h[t-1]
+                        h[t] = omega + alpha * (returns[sim, t - 1] ** 2) + beta * h[t - 1]
                     returns[sim, t] = np.sqrt(h[t]) * shocks[t]
 
             # Convert to monthly decimal returns
@@ -269,7 +269,7 @@ class MonteCarloSimulator:
         self,
         annuity_monthly_payment: float,
         annuity_guarantee_years: int,
-        simulation_results: dict | None = None
+        simulation_results: dict | None = None,
     ) -> dict:
         """
         Compare Monte Carlo results to an annuity option.
@@ -289,13 +289,15 @@ class MonteCarloSimulator:
         annuity_total = annuity_monthly_payment * 12 * annuity_guarantee_years
 
         # Monte Carlo statistics
-        mc_total_after_tax = simulation_results['total_withdrawn'] - simulation_results['total_taxes']
+        mc_total_after_tax = (
+            simulation_results["total_withdrawn"] - simulation_results["total_taxes"]
+        )
 
         return {
-            'annuity_total_guaranteed': annuity_total,
-            'mc_median_total_after_tax': np.median(mc_total_after_tax),
-            'mc_mean_total_after_tax': np.mean(mc_total_after_tax),
-            'probability_mc_exceeds_annuity': np.mean(mc_total_after_tax > annuity_total),
-            'mc_depletion_probability': simulation_results['depletion_probability'],
-            'mc_median_final_value': simulation_results['median_final_value']
+            "annuity_total_guaranteed": annuity_total,
+            "mc_median_total_after_tax": np.median(mc_total_after_tax),
+            "mc_mean_total_after_tax": np.mean(mc_total_after_tax),
+            "probability_mc_exceeds_annuity": np.mean(mc_total_after_tax > annuity_total),
+            "mc_depletion_probability": simulation_results["depletion_probability"],
+            "mc_median_final_value": simulation_results["median_final_value"],
         }

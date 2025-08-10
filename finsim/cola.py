@@ -5,7 +5,6 @@ Uses the actual SSA uprating schedule which includes:
 - CBO projections for 2025-2035
 """
 
-
 import numpy as np
 
 # Hardcoded SSA uprating values from PolicyEngine-US
@@ -44,6 +43,7 @@ C_CPI_U = {
     2035: 215.4,
 }
 
+
 def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
     """Get Social Security COLA factors using actual SSA uprating schedule.
 
@@ -72,7 +72,7 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
                 from policyengine_us import Microsimulation
 
                 # Only create simulation once
-                if 'sim' not in locals():
+                if "sim" not in locals():
                     sim = Microsimulation(dataset="cps_2024")
                     parameters = sim.tax_benefit_system.parameters
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             if i == 0:
                 print(f"  {year}: {cola_factors[i]:.3f} (base year)")
             else:
-                annual_rate = (cola_factors[i] / cola_factors[i-1] - 1) * 100
+                annual_rate = (cola_factors[i] / cola_factors[i - 1] - 1) * 100
                 cumulative = (cola_factors[i] - 1) * 100
                 print(
                     f"  {year}: {cola_factors[i]:.3f} "
@@ -170,7 +170,7 @@ if __name__ == "__main__":
             if i == 0:
                 print(f"  {year}: {inflation_factors[i]:.3f} (base year)")
             else:
-                annual_rate = (inflation_factors[i] / inflation_factors[i-1] - 1) * 100
+                annual_rate = (inflation_factors[i] / inflation_factors[i - 1] - 1) * 100
                 cumulative = (inflation_factors[i] - 1) * 100
                 print(
                     f"  {year}: {inflation_factors[i]:.3f} "

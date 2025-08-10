@@ -1,6 +1,5 @@
 """Portfolio simulation with next-year tax payment (more realistic)."""
 
-
 import numpy as np
 
 from .mortality import get_mortality_rates  # Keep local for now as fallback
@@ -8,6 +7,7 @@ from .tax import TaxCalculator
 
 try:
     from mortality import MortalityTable  # Try to use the package
+
     USE_MORTALITY_PACKAGE = True
 except ImportError:
     USE_MORTALITY_PACKAGE = False
@@ -61,7 +61,9 @@ def validate_inputs(
     if initial_portfolio < 0:
         raise ValueError(f"initial_portfolio cannot be negative, got {initial_portfolio}")
     if initial_portfolio > 1e10:
-        raise ValueError(f"initial_portfolio too large ({initial_portfolio:.0f}), maximum is $10 billion")
+        raise ValueError(
+            f"initial_portfolio too large ({initial_portfolio:.0f}), maximum is $10 billion"
+        )
 
     # Validate age parameters
     if current_age < 18:
@@ -70,7 +72,9 @@ def validate_inputs(
         raise ValueError(f"current_age cannot exceed 120, got {current_age}")
 
     if retirement_age < current_age:
-        raise ValueError(f"retirement_age ({retirement_age}) cannot be less than current_age ({current_age})")
+        raise ValueError(
+            f"retirement_age ({retirement_age}) cannot be less than current_age ({current_age})"
+        )
     if retirement_age > 100:
         raise ValueError(f"retirement_age cannot exceed 100, got {retirement_age}")
 
@@ -78,7 +82,9 @@ def validate_inputs(
     if social_security < 0:
         raise ValueError(f"social_security cannot be negative, got {social_security}")
     if social_security > 200000:
-        raise ValueError(f"social_security seems unrealistic ({social_security}), maximum expected is $200,000")
+        raise ValueError(
+            f"social_security seems unrealistic ({social_security}), maximum expected is $200,000"
+        )
 
     if pension < 0:
         raise ValueError(f"pension cannot be negative, got {pension}")
@@ -88,24 +94,34 @@ def validate_inputs(
     if employment_income < 0:
         raise ValueError(f"employment_income cannot be negative, got {employment_income}")
     if employment_income > 10000000:
-        raise ValueError(f"employment_income seems unrealistic ({employment_income}), maximum expected is $10,000,000")
+        raise ValueError(
+            f"employment_income seems unrealistic ({employment_income}), maximum expected is $10,000,000"
+        )
 
     # Validate annuity parameters
     if annuity_annual < 0:
         raise ValueError(f"annuity_annual cannot be negative, got {annuity_annual}")
     if annuity_annual > 1000000:
-        raise ValueError(f"annuity_annual seems unrealistic ({annuity_annual}), maximum expected is $1,000,000")
+        raise ValueError(
+            f"annuity_annual seems unrealistic ({annuity_annual}), maximum expected is $1,000,000"
+        )
 
     if annuity_guarantee_years < 0:
-        raise ValueError(f"annuity_guarantee_years cannot be negative, got {annuity_guarantee_years}")
+        raise ValueError(
+            f"annuity_guarantee_years cannot be negative, got {annuity_guarantee_years}"
+        )
     if annuity_guarantee_years > 50:
-        raise ValueError(f"annuity_guarantee_years too large ({annuity_guarantee_years}), maximum is 50")
+        raise ValueError(
+            f"annuity_guarantee_years too large ({annuity_guarantee_years}), maximum is 50"
+        )
 
     # Validate consumption
     if annual_consumption < 0:
         raise ValueError(f"annual_consumption cannot be negative, got {annual_consumption}")
     if annual_consumption > 10000000:
-        raise ValueError(f"annual_consumption seems unrealistic ({annual_consumption}), maximum expected is $10,000,000")
+        raise ValueError(
+            f"annual_consumption seems unrealistic ({annual_consumption}), maximum expected is $10,000,000"
+        )
 
     # Validate market parameters
     if expected_return < -0.5:
@@ -125,24 +141,72 @@ def validate_inputs(
 
     # Validate state
     VALID_STATES = [
-        'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-        'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-        'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-        'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-        'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
+        "DC",
     ]
     if state not in VALID_STATES:
         raise ValueError(f"Invalid state '{state}'. Must be one of: {', '.join(VALID_STATES)}")
 
     # Validate gender
-    VALID_GENDERS = ['Male', 'Female']
+    VALID_GENDERS = ["Male", "Female"]
     if gender not in VALID_GENDERS:
         raise ValueError(f"Invalid gender '{gender}'. Must be 'Male' or 'Female'")
 
     # Validate annuity type
-    VALID_ANNUITY_TYPES = ['Life Only', 'Life Contingent with Guarantee', 'Fixed Period']
+    VALID_ANNUITY_TYPES = ["Life Only", "Life Contingent with Guarantee", "Fixed Period"]
     if annuity_type not in VALID_ANNUITY_TYPES:
-        raise ValueError(f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}")
+        raise ValueError(
+            f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}"
+        )
 
     # Validate spouse parameters if has_spouse
     if has_spouse:
@@ -160,9 +224,13 @@ def validate_inputs(
 
         if spouse_social_security is not None:
             if spouse_social_security < 0:
-                raise ValueError(f"spouse_social_security cannot be negative, got {spouse_social_security}")
+                raise ValueError(
+                    f"spouse_social_security cannot be negative, got {spouse_social_security}"
+                )
             if spouse_social_security > 200000:
-                raise ValueError(f"spouse_social_security seems unrealistic ({spouse_social_security})")
+                raise ValueError(
+                    f"spouse_social_security seems unrealistic ({spouse_social_security})"
+                )
 
         if spouse_pension is not None:
             if spouse_pension < 0:
@@ -172,15 +240,23 @@ def validate_inputs(
 
         if spouse_employment_income is not None:
             if spouse_employment_income < 0:
-                raise ValueError(f"spouse_employment_income cannot be negative, got {spouse_employment_income}")
+                raise ValueError(
+                    f"spouse_employment_income cannot be negative, got {spouse_employment_income}"
+                )
             if spouse_employment_income > 10000000:
-                raise ValueError(f"spouse_employment_income seems unrealistic ({spouse_employment_income})")
+                raise ValueError(
+                    f"spouse_employment_income seems unrealistic ({spouse_employment_income})"
+                )
 
         if spouse_retirement_age is not None:
             if spouse_retirement_age < spouse_age:
-                raise ValueError(f"spouse_retirement_age ({spouse_retirement_age}) cannot be less than spouse_age ({spouse_age})")
+                raise ValueError(
+                    f"spouse_retirement_age ({spouse_retirement_age}) cannot be less than spouse_age ({spouse_age})"
+                )
             if spouse_retirement_age > 100:
-                raise ValueError(f"spouse_retirement_age cannot exceed 100, got {spouse_retirement_age}")
+                raise ValueError(
+                    f"spouse_retirement_age cannot exceed 100, got {spouse_retirement_age}"
+                )
 
 
 def simulate_portfolio(
@@ -188,37 +264,29 @@ def simulate_portfolio(
     n_simulations: int,
     n_years: int,
     initial_portfolio: float,
-
     # Age and mortality
     current_age: int,
     include_mortality: bool,
-
     # Income sources
     social_security: float,
     pension: float,
     employment_income: float,  # Wages and salaries (in today's dollars)
     retirement_age: int,  # Age when employment income stops
-
     # Annuity parameters
     has_annuity: bool,
     annuity_type: str,
     annuity_annual: float,
     annuity_guarantee_years: int,
-
     # Consumption
     annual_consumption: float,  # Total consumption need (not net)
-
     # Market parameters
     expected_return: float,
     return_volatility: float,
     dividend_yield: float,
-
     # Tax parameters
     state: str,
-
     # Optional parameters with defaults
     employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
-
     # Spouse parameters (optional)
     has_spouse: bool = False,
     spouse_age: int = None,
@@ -228,13 +296,10 @@ def simulate_portfolio(
     spouse_employment_income: float = 0,
     spouse_retirement_age: int = None,
     spouse_employment_growth_rate: float = 0.0,
-
     # Progress callback
     progress_callback: callable | None = None,
-
     # Gender for primary person (optional, defaults to Male)
     gender: str = "Male",
-
     # Enhanced mortality parameters (optional)
     use_enhanced_mortality: bool = False,
     smoker: bool | None = None,
@@ -242,7 +307,7 @@ def simulate_portfolio(
     health_status: str | None = None,
     spouse_smoker: bool | None = None,
     spouse_income_percentile: int | None = None,
-    spouse_health_status: str | None = None
+    spouse_health_status: str | None = None,
 ) -> dict[str, np.ndarray]:
     """
     Run Monte Carlo simulation with next-year tax payment.
@@ -294,14 +359,18 @@ def simulate_portfolio(
         # Use the mortality package for clean SSA tables
         gender_lower = gender.lower() if gender else "male"
         table = MortalityTable(gender_lower)
-        mortality_rates = {age: table.get_rate(age)
-                          for age in range(current_age, min(current_age + n_years + 1, 121))}
+        mortality_rates = {
+            age: table.get_rate(age)
+            for age in range(current_age, min(current_age + n_years + 1, 121))
+        }
 
         if has_spouse:
             spouse_gender_lower = spouse_gender.lower() if spouse_gender else "female"
             spouse_table = MortalityTable(spouse_gender_lower)
-            spouse_mortality_rates = {age: spouse_table.get_rate(age)
-                                    for age in range(spouse_age, min(spouse_age + n_years + 1, 121))}
+            spouse_mortality_rates = {
+                age: spouse_table.get_rate(age)
+                for age in range(spouse_age, min(spouse_age + n_years + 1, 121))
+            }
         else:
             spouse_mortality_rates = {}
     elif use_enhanced_mortality and include_mortality and not USE_MORTALITY_PACKAGE:
@@ -311,10 +380,12 @@ def simulate_portfolio(
             use_bayesian=True,
             smoker=smoker,
             income_percentile=income_percentile,
-            health_status=health_status
+            health_status=health_status,
         )
-        mortality_rates = {age: mortality_calculator.get_mortality_rate(age)
-                          for age in range(current_age, min(current_age + n_years + 1, 121))}
+        mortality_rates = {
+            age: mortality_calculator.get_mortality_rate(age)
+            for age in range(current_age, min(current_age + n_years + 1, 121))
+        }
 
         if has_spouse:
             spouse_mortality_calculator = EnhancedMortality(
@@ -322,22 +393,25 @@ def simulate_portfolio(
                 use_bayesian=True,
                 smoker=spouse_smoker,
                 income_percentile=spouse_income_percentile,
-                health_status=spouse_health_status
+                health_status=spouse_health_status,
             )
-            spouse_mortality_rates = {age: spouse_mortality_calculator.get_mortality_rate(age)
-                                    for age in range(spouse_age, min(spouse_age + n_years + 1, 121))}
+            spouse_mortality_rates = {
+                age: spouse_mortality_calculator.get_mortality_rate(age)
+                for age in range(spouse_age, min(spouse_age + n_years + 1, 121))
+            }
         else:
             spouse_mortality_rates = {}
     else:
         # Use basic SSA tables (local fallback)
         mortality_rates = get_mortality_rates(gender) if include_mortality else {}
-        spouse_mortality_rates = get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
+        spouse_mortality_rates = (
+            get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
+        )
 
     # Generate all returns upfront using the return generator
     # This fixes the bug where returns were getting repeated
     return_gen = ReturnGenerator(
-        expected_return=expected_return / 100,
-        volatility=return_volatility / 100
+        expected_return=expected_return / 100, volatility=return_volatility / 100
     )
     growth_factors_matrix = return_gen.generate_returns(n_simulations, n_years)
 
@@ -372,22 +446,19 @@ def simulate_portfolio(
 
         # Progress callback with partial results
         if progress_callback:
-            progress_callback(year, n_years, age, {
-                'portfolio_paths': portfolio_paths
-            })
+            progress_callback(year, n_years, age, {"portfolio_paths": portfolio_paths})
 
         # Calculate annuity income for this year
         if has_annuity:
             if annuity_type == "Fixed Period":
                 gets_annuity = year <= annuity_guarantee_years
-                annuity_income[:, year-1] = annuity_annual if gets_annuity else 0
+                annuity_income[:, year - 1] = annuity_annual if gets_annuity else 0
             elif annuity_type == "Life Only":
-                annuity_income[:, year-1] = np.where(alive_mask[:, year-1], annuity_annual, 0)
+                annuity_income[:, year - 1] = np.where(alive_mask[:, year - 1], annuity_annual, 0)
             else:  # Life Contingent with Guarantee
                 in_guarantee = year <= annuity_guarantee_years
-                annuity_income[:, year-1] = np.where(
-                    alive_mask[:, year-1] | in_guarantee,
-                    annuity_annual, 0
+                annuity_income[:, year - 1] = np.where(
+                    alive_mask[:, year - 1] | in_guarantee, annuity_annual, 0
                 )
 
         # Mortality
@@ -404,27 +475,22 @@ def simulate_portfolio(
                 spouse_alive_mask[spouse_death_this_year, year:] = False
 
         # Only simulate for those still alive and not failed
-        active = alive_mask[:, year] & (portfolio_paths[:, year-1] > 0)
+        active = alive_mask[:, year] & (portfolio_paths[:, year - 1] > 0)
 
         # Get pre-generated growth factors for this year
-        growth_factor = growth_factors_matrix[:, year-1]
-
+        growth_factor = growth_factors_matrix[:, year - 1]
 
         # Portfolio evolution (only for living people)
-        current_portfolio = portfolio_paths[:, year-1]
+        current_portfolio = portfolio_paths[:, year - 1]
         portfolio_after_growth = np.where(
             alive_mask[:, year],
             current_portfolio * growth_factor,
-            current_portfolio  # Dead people's estates don't grow
+            current_portfolio,  # Dead people's estates don't grow
         )
 
         # Dividends (only for living people's portfolios)
-        dividends = np.where(
-            alive_mask[:, year],
-            current_portfolio * (dividend_yield / 100),
-            0
-        )
-        dividend_income[:, year-1] = dividends
+        dividends = np.where(alive_mask[:, year], current_portfolio * (dividend_yield / 100), 0)
+        dividend_income[:, year - 1] = dividends
 
         # Calculate withdrawal needed for consumption AND last year's taxes
         # This is the KEY CHANGE - we pay last year's taxes from this year's withdrawal
@@ -468,7 +534,7 @@ def simulate_portfolio(
         total_employment = wages + spouse_wages
         total_ss_pension = current_social_security + pension + current_spouse_ss + spouse_pens
 
-        guaranteed_income = total_ss_pension + annuity_income[:, year-1] + total_employment
+        guaranteed_income = total_ss_pension + annuity_income[:, year - 1] + total_employment
         total_income_available = guaranteed_income + dividends
 
         # Calculate inflation-adjusted consumption using actual C-CPI-U projections
@@ -479,30 +545,32 @@ def simulate_portfolio(
         withdrawal_need = np.zeros(n_simulations)
         withdrawal_need[active] = np.maximum(
             0,
-            current_consumption + prior_year_tax_liability[active] - total_income_available[active]
+            current_consumption + prior_year_tax_liability[active] - total_income_available[active],
         )
 
         # This is our actual gross withdrawal (no tax gross-up needed!)
         actual_gross_withdrawal = withdrawal_need
-        gross_withdrawals[:, year-1] = actual_gross_withdrawal
+        gross_withdrawals[:, year - 1] = actual_gross_withdrawal
 
         # Calculate realized capital gains for tax purposes
-        gain_fraction = np.where(current_portfolio > 0,
-                                np.maximum(0, (current_portfolio - cost_basis) / current_portfolio),
-                                0)
+        gain_fraction = np.where(
+            current_portfolio > 0,
+            np.maximum(0, (current_portfolio - cost_basis) / current_portfolio),
+            0,
+        )
         realized_gains = actual_gross_withdrawal * gain_fraction
-        capital_gains[:, year-1] = realized_gains
+        capital_gains[:, year - 1] = realized_gains
 
         # Update cost basis
-        withdrawal_fraction = np.where(current_portfolio > 0,
-                                      actual_gross_withdrawal / current_portfolio,
-                                      0)
+        withdrawal_fraction = np.where(
+            current_portfolio > 0, actual_gross_withdrawal / current_portfolio, 0
+        )
         cost_basis = cost_basis * (1 - withdrawal_fraction)
 
         # Calculate taxes owed on THIS YEAR's income (to be paid NEXT year)
         if active.any():
             # Combine all SS and pension income for household
-            total_ss_and_pension = total_ss_pension + annuity_income[:, year-1]
+            total_ss_and_pension = total_ss_pension + annuity_income[:, year - 1]
             ages_array = np.full(n_simulations, age)
 
             # Employment income for tax calculation (household total)
@@ -514,23 +582,22 @@ def simulate_portfolio(
                 ages=ages_array,
                 filing_status=filing_status,
                 dividend_income_array=dividends,
-                employment_income_array=employment_income_array
+                employment_income_array=employment_income_array,
             )
 
             # Store tax liability for next year
-            taxes_owed[:, year-1] = tax_results['total_tax']
-            prior_year_tax_liability = tax_results['total_tax'].copy()
+            taxes_owed[:, year - 1] = tax_results["total_tax"]
+            prior_year_tax_liability = tax_results["total_tax"].copy()
 
         # Record taxes actually paid this year (from last year's liability)
         if year > 1:
-            taxes_paid[:, year-1] = taxes_owed[:, year-2]
+            taxes_paid[:, year - 1] = taxes_owed[:, year - 2]
 
         # Net withdrawals (what's available for consumption after paying last year's taxes)
-        net_withdrawals[:, year-1] = actual_gross_withdrawal - taxes_paid[:, year-1]
+        net_withdrawals[:, year - 1] = actual_gross_withdrawal - taxes_paid[:, year - 1]
 
         # New portfolio value
         new_portfolio = portfolio_after_growth - actual_gross_withdrawal
-
 
         # Check for failures
         newly_failed = (current_portfolio > 0) & (new_portfolio < 0)
@@ -547,19 +614,19 @@ def simulate_portfolio(
         if len(death_years) > 0:
             death_year = death_years[0]
             if death_year > 0:
-                estate_at_death[i] = portfolio_paths[i, death_year-1]
+                estate_at_death[i] = portfolio_paths[i, death_year - 1]
 
     return {
-        'portfolio_paths': portfolio_paths,
-        'failure_year': failure_year,
-        'alive_mask': alive_mask,
-        'estate_at_death': estate_at_death,
-        'annuity_income': annuity_income,
-        'dividend_income': dividend_income,
-        'capital_gains': capital_gains,
-        'gross_withdrawals': gross_withdrawals,
-        'taxes_owed': taxes_owed,
-        'taxes_paid': taxes_paid,
-        'net_withdrawals': net_withdrawals,
-        'cost_basis': cost_basis
+        "portfolio_paths": portfolio_paths,
+        "failure_year": failure_year,
+        "alive_mask": alive_mask,
+        "estate_at_death": estate_at_death,
+        "annuity_income": annuity_income,
+        "dividend_income": dividend_income,
+        "capital_gains": capital_gains,
+        "gross_withdrawals": gross_withdrawals,
+        "taxes_owed": taxes_owed,
+        "taxes_paid": taxes_paid,
+        "net_withdrawals": net_withdrawals,
+        "cost_basis": cost_basis,
     }

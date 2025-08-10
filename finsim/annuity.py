@@ -30,7 +30,7 @@ class AnnuityCalculator:
         85: 4.98,
         90: 3.55,
         95: 2.65,
-        100: 2.08
+        100: 2.08,
     }
 
     def __init__(self, age: int = 65, gender: str = "male"):
@@ -49,7 +49,7 @@ class AnnuityCalculator:
         premium: float,
         monthly_payment: float,
         guarantee_months: int,
-        life_contingent: bool = False
+        life_contingent: bool = False,
     ) -> float:
         """
         Calculate internal rate of return for an annuity.
@@ -95,15 +95,10 @@ class AnnuityCalculator:
                     return -1.0
         else:
             # Life contingent annuity - use survival probabilities
-            return self._calculate_life_contingent_irr(
-                premium, monthly_payment, guarantee_months
-            )
+            return self._calculate_life_contingent_irr(premium, monthly_payment, guarantee_months)
 
     def _calculate_life_contingent_irr(
-        self,
-        premium: float,
-        monthly_payment: float,
-        guarantee_months: int
+        self, premium: float, monthly_payment: float, guarantee_months: int
     ) -> float:
         """
         Calculate IRR for life-contingent annuity using mortality tables.
@@ -153,12 +148,9 @@ class AnnuityCalculator:
                 # If optimization fails, return simple approximation
                 total_expected = sum(cash_flows[1:])
                 years = len(cash_flows) / 12
-                return (total_expected / premium) ** (1/years) - 1
+                return (total_expected / premium) ** (1 / years) - 1
 
-    def compare_annuity_options(
-        self,
-        proposals: list
-    ) -> pd.DataFrame:
+    def compare_annuity_options(self, proposals: list) -> pd.DataFrame:
         """
         Compare multiple annuity proposals.
 
@@ -172,33 +164,32 @@ class AnnuityCalculator:
 
         for proposal in proposals:
             irr = self.calculate_irr(
-                premium=proposal['premium'],
-                monthly_payment=proposal['monthly_payment'],
-                guarantee_months=proposal.get('guarantee_months', 0),
-                life_contingent=proposal.get('life_contingent', False)
+                premium=proposal["premium"],
+                monthly_payment=proposal["monthly_payment"],
+                guarantee_months=proposal.get("guarantee_months", 0),
+                life_contingent=proposal.get("life_contingent", False),
             )
 
-            total_guaranteed = proposal['monthly_payment'] * proposal.get('guarantee_months', 0)
+            total_guaranteed = proposal["monthly_payment"] * proposal.get("guarantee_months", 0)
 
-            results.append({
-                'Name': proposal['name'],
-                'Premium': proposal['premium'],
-                'Monthly Payment': proposal['monthly_payment'],
-                'Annual Payment': proposal['monthly_payment'] * 12,
-                'Guarantee Period': proposal.get('guarantee_months', 0) / 12,
-                'Life Contingent': proposal.get('life_contingent', False),
-                'Total Guaranteed': total_guaranteed,
-                'IRR': irr,
-                'Taxable': proposal.get('taxable', False)
-            })
+            results.append(
+                {
+                    "Name": proposal["name"],
+                    "Premium": proposal["premium"],
+                    "Monthly Payment": proposal["monthly_payment"],
+                    "Annual Payment": proposal["monthly_payment"] * 12,
+                    "Guarantee Period": proposal.get("guarantee_months", 0) / 12,
+                    "Life Contingent": proposal.get("life_contingent", False),
+                    "Total Guaranteed": total_guaranteed,
+                    "IRR": irr,
+                    "Taxable": proposal.get("taxable", False),
+                }
+            )
 
         return pd.DataFrame(results)
 
     def calculate_present_value(
-        self,
-        monthly_payment: float,
-        months: int,
-        discount_rate: float
+        self, monthly_payment: float, months: int, discount_rate: float
     ) -> float:
         """
         Calculate present value of annuity payments.
@@ -211,7 +202,7 @@ class AnnuityCalculator:
         Returns:
             Present value
         """
-        monthly_rate = (1 + discount_rate) ** (1/12) - 1
+        monthly_rate = (1 + discount_rate) ** (1 / 12) - 1
 
         if monthly_rate == 0:
             return monthly_payment * months

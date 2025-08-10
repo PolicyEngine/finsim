@@ -55,7 +55,7 @@ class TestMortality:
 
         # Should decrease monotonically
         for i in range(1, len(survival_curve)):
-            assert survival_curve[i] <= survival_curve[i-1]
+            assert survival_curve[i] <= survival_curve[i - 1]
 
         # Should have significant mortality by age 95
         assert survival_curve[-1] < 0.5  # Less than 50% survive to 95

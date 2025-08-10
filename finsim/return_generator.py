@@ -12,10 +12,9 @@ import numpy as np
 class ReturnGenerator:
     """Generate returns for Monte Carlo simulations."""
 
-    def __init__(self,
-                 expected_return: float = 0.07,
-                 volatility: float = 0.15,
-                 seed: int | None = None):
+    def __init__(
+        self, expected_return: float = 0.07, volatility: float = 0.15, seed: int | None = None
+    ):
         """Initialize the return generator.
 
         Args:
@@ -30,9 +29,7 @@ class ReturnGenerator:
         if seed is not None:
             np.random.seed(seed)
 
-    def generate_returns(self,
-                        n_simulations: int,
-                        n_years: int) -> np.ndarray:
+    def generate_returns(self, n_simulations: int, n_years: int) -> np.ndarray:
         """Generate matrix of annual returns (as growth factors).
 
         Args:
@@ -60,8 +57,9 @@ class ReturnGenerator:
             fat_tail_positions = np.where(fat_tail_mask)
             original_signs = np.sign(z_matrix[fat_tail_positions])
             # If original was 0, randomly assign direction
-            original_signs[original_signs == 0] = np.random.choice([-1, 1],
-                                                                   size=(original_signs == 0).sum())
+            original_signs[original_signs == 0] = np.random.choice(
+                [-1, 1], size=(original_signs == 0).sum()
+            )
 
             magnitudes = np.random.uniform(2.5, 3.5, size=n_fat_tails)
             z_matrix[fat_tail_positions] = original_signs * magnitudes
@@ -71,8 +69,7 @@ class ReturnGenerator:
         z_matrix = np.clip(z_matrix, -4, 4)
 
         # Convert to log returns using GBM formula
-        log_returns = (self.expected_return - 0.5 * self.volatility**2) + \
-                     self.volatility * z_matrix
+        log_returns = (self.expected_return - 0.5 * self.volatility**2) + self.volatility * z_matrix
 
         # Convert to growth factors
         growth_factors = np.exp(log_returns)
@@ -95,14 +92,12 @@ class ReturnGenerator:
         """
         z = np.random.randn(n_years)
         z = np.clip(z, -4, 4)
-        log_returns = (self.expected_return - 0.5 * self.volatility**2) + \
-                     self.volatility * z
+        log_returns = (self.expected_return - 0.5 * self.volatility**2) + self.volatility * z
         return np.exp(log_returns)
 
-    def generate_returns_with_correlation(self,
-                                         n_simulations: int,
-                                         n_years: int,
-                                         correlation: float = 0.0) -> np.ndarray:
+    def generate_returns_with_correlation(
+        self, n_simulations: int, n_years: int, correlation: float = 0.0
+    ) -> np.ndarray:
         """Generate returns with correlation between consecutive years.
 
         This can be used to model momentum or mean reversion.

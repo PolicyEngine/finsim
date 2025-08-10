@@ -4,6 +4,7 @@ You're right - what I proposed IS conceptually Bayesian, just not
 mathematically formal about it.
 """
 
+
 def what_stmomo_does():
     """Pure frequentist approach."""
     return """
@@ -21,6 +22,7 @@ def what_stmomo_does():
     - Treats billionaire same as minimum wage worker
     """
 
+
 def what_i_proposed():
     """Informal Bayesian approach."""
     return """
@@ -35,6 +37,7 @@ def what_i_proposed():
 
     Just not using Bayes' theorem explicitly!
     """
+
 
 def truly_bayesian():
     """What formal Bayesian would look like."""
@@ -57,6 +60,7 @@ def truly_bayesian():
     # Now we have full distribution, not point estimate
     """
 
+
 def why_informal_bayesian_is_fine():
     """Why we don't need formal Bayesian for FinSim."""
 
@@ -66,52 +70,54 @@ def why_informal_bayesian_is_fine():
             Uncertainty comes from market returns AND mortality
             Don't need mortality posterior distribution
             """,
-
         "Point estimates are enough": """
             Formal: 30% ± 5% mortality reduction for high income
             Informal: 30% reduction (0.7x multiplier)
             For planning, the ±5% doesn't matter much
             """,
-
         "Speed matters": """
             Informal: Instant calculation
             Formal Bayesian: Seconds to minutes per person
             Web app needs to be fast
             """,
-
         "Interpretability": """
             'You're healthier so 20% lower mortality' - Clear
             'Your posterior log-mortality distribution...' - Confusing
-            """
+            """,
     }
     return reasons
+
 
 def the_spectrum():
     """Different approaches on the Bayesian spectrum."""
 
     print("Pure Frequentist ←→ Informal Bayesian ←→ Formal Bayesian")
-    print("="*60)
+    print("=" * 60)
 
     approaches = [
-        ("StMoMo", "Pure Frequentist",
-         "Only uses death/exposure data, no external info"),
-
-        ("Our mortality_projection.py", "Informal Bayesian",
-         "Starts with SSA (prior), adjusts for factors (update)"),
-
-        ("Academic Bayesian", "Formal Bayesian",
-         "Explicit priors, MCMC inference, full posteriors"),
+        ("StMoMo", "Pure Frequentist", "Only uses death/exposure data, no external info"),
+        (
+            "Our mortality_projection.py",
+            "Informal Bayesian",
+            "Starts with SSA (prior), adjusts for factors (update)",
+        ),
+        (
+            "Academic Bayesian",
+            "Formal Bayesian",
+            "Explicit priors, MCMC inference, full posteriors",
+        ),
     ]
 
     for name, type_, description in approaches:
         print(f"\n{name} ({type_})")
         print(f"  {description}")
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("For FinSim: Informal Bayesian is the sweet spot!")
     print("- Uses external knowledge (Bayesian spirit)")
     print("- Fast and simple (Frequentist implementation)")
     print("- Best of both worlds")
+
 
 if __name__ == "__main__":
     the_spectrum()

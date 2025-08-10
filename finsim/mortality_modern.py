@@ -24,7 +24,7 @@ import numpy as np
 class MortalityAssumptions:
     """User-friendly mortality assumptions.
 
-    Instead of abstract statistical parameters, use concepts that 
+    Instead of abstract statistical parameters, use concepts that
     financial planners and individuals can understand.
     """
 
@@ -44,7 +44,7 @@ class MortalityAssumptions:
 
         Based on research from:
         - Chetty et al. (2016): Income gaps
-        - Case & Deaton (2017): Education effects  
+        - Case & Deaton (2017): Education effects
         - Rogers et al. (2000): Smoking impact
         """
         multiplier = 1.0
@@ -55,7 +55,7 @@ class MortalityAssumptions:
             "good": 0.9,
             "average": 1.0,
             "below_average": 1.15,
-            "poor": 1.3
+            "poor": 1.3,
         }
         multiplier *= health_multipliers[self.health_status]
 
@@ -68,7 +68,7 @@ class MortalityAssumptions:
             "high_school": 1.1,
             "some_college": 1.05,
             "bachelors": 0.95,
-            "graduate": 0.92
+            "graduate": 0.92,
         }
         multiplier *= education_multipliers[self.education]
 
@@ -89,8 +89,8 @@ class MortalityAssumptions:
         """Get annual mortality improvement rate."""
         rates = {
             "pessimistic": 0.005,  # 0.5% per year
-            "baseline": 0.01,      # 1% per year (historical average)
-            "optimistic": 0.02     # 2% per year (recent decades)
+            "baseline": 0.01,  # 1% per year (historical average)
+            "optimistic": 0.02,  # 2% per year (recent decades)
         }
         return rates[self.medical_progress]
 
@@ -105,9 +105,9 @@ class PracticalMortalityModel:
     - Good enough accuracy for planning
     """
 
-    def __init__(self,
-                 gender: Literal["male", "female"],
-                 assumptions: MortalityAssumptions | None = None):
+    def __init__(
+        self, gender: Literal["male", "female"], assumptions: MortalityAssumptions | None = None
+    ):
         """Initialize mortality model.
 
         Args:
@@ -129,19 +129,47 @@ class PracticalMortalityModel:
         # Using SSA 2021 as baseline
         if self.gender == "male":
             return {
-                30: 0.00187, 35: 0.00241, 40: 0.00322, 45: 0.00446,
-                50: 0.00533, 55: 0.00803, 60: 0.01158, 65: 0.01604,
-                70: 0.02476, 75: 0.03843, 80: 0.06069, 85: 0.09764,
-                90: 0.15829, 95: 0.25457, 100: 0.40032, 105: 0.60868,
-                110: 0.88489, 115: 1.00000, 120: 1.00000
+                30: 0.00187,
+                35: 0.00241,
+                40: 0.00322,
+                45: 0.00446,
+                50: 0.00533,
+                55: 0.00803,
+                60: 0.01158,
+                65: 0.01604,
+                70: 0.02476,
+                75: 0.03843,
+                80: 0.06069,
+                85: 0.09764,
+                90: 0.15829,
+                95: 0.25457,
+                100: 0.40032,
+                105: 0.60868,
+                110: 0.88489,
+                115: 1.00000,
+                120: 1.00000,
             }
         else:
             return {
-                30: 0.00063, 35: 0.00088, 40: 0.00128, 45: 0.00192,
-                50: 0.00324, 55: 0.00494, 60: 0.00748, 65: 0.01052,
-                70: 0.01642, 75: 0.02653, 80: 0.04365, 85: 0.07247,
-                90: 0.11991, 95: 0.19620, 100: 0.31467, 105: 0.48856,
-                110: 0.72299, 115: 1.00000, 120: 1.00000
+                30: 0.00063,
+                35: 0.00088,
+                40: 0.00128,
+                45: 0.00192,
+                50: 0.00324,
+                55: 0.00494,
+                60: 0.00748,
+                65: 0.01052,
+                70: 0.01642,
+                75: 0.02653,
+                80: 0.04365,
+                85: 0.07247,
+                90: 0.11991,
+                95: 0.19620,
+                100: 0.31467,
+                105: 0.48856,
+                110: 0.72299,
+                115: 1.00000,
+                120: 1.00000,
             }
 
     def get_mortality_rate(self, age: int, years_from_now: int = 0) -> float:
@@ -171,10 +199,9 @@ class PracticalMortalityModel:
 
         return np.clip(adjusted_rate, 0, 1)
 
-    def simulate_lifetime(self,
-                         current_age: int,
-                         n_simulations: int = 1000,
-                         max_age: int = 120) -> np.ndarray:
+    def simulate_lifetime(
+        self, current_age: int, n_simulations: int = 1000, max_age: int = 120
+    ) -> np.ndarray:
         """Simulate lifetimes using Monte Carlo.
 
         Args:
@@ -198,9 +225,7 @@ class PracticalMortalityModel:
 
         return death_ages
 
-    def survival_curve(self,
-                      current_age: int,
-                      max_age: int = 120) -> tuple[np.ndarray, np.ndarray]:
+    def survival_curve(self, current_age: int, max_age: int = 120) -> tuple[np.ndarray, np.ndarray]:
         """Get expected survival curve.
 
         Args:
@@ -216,7 +241,7 @@ class PracticalMortalityModel:
         for i, age in enumerate(ages[1:], 1):
             years_from_now = age - current_age - 1
             qx = self.get_mortality_rate(age - 1, years_from_now)
-            survival[i] = survival[i-1] * (1 - qx)
+            survival[i] = survival[i - 1] * (1 - qx)
 
         return ages, survival
 
@@ -262,8 +287,8 @@ def compare_to_stmomo():
             smoker=False,
             education="graduate",
             income_percentile=75,
-            medical_progress="baseline"
-        )
+            medical_progress="baseline",
+        ),
     )
 
     # Quick results
@@ -272,6 +297,7 @@ def compare_to_stmomo():
 
     # Fast simulation
     import time
+
     start = time.time()
     lifetimes = model.simulate_lifetime(65, n_simulations=10000)
     elapsed = time.time() - start

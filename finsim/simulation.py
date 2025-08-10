@@ -165,7 +165,7 @@ class RetirementSimulation:
             if self.config.include_mortality:
                 mort_rate = self._get_mortality_rate(age)
                 if np.random.random() < mort_rate:
-                    alive_mask[year + 1:] = False
+                    alive_mask[year + 1 :] = False
 
             # Skip if dead or portfolio depleted
             if not alive_mask[year] or portfolio_values[year] <= 0:
@@ -179,7 +179,7 @@ class RetirementSimulation:
             # Investment returns (GBM) - PRICE appreciation only
             price_returns = np.random.normal(
                 self.config.expected_return / 100,  # This is price return only
-                self.config.return_volatility / 100
+                self.config.return_volatility / 100,
             )
             growth_factor = np.exp(price_returns)
             portfolio_after_growth = portfolio_values[year] * growth_factor
@@ -216,7 +216,7 @@ class RetirementSimulation:
             taxes_paid=taxes_paid,
             annuity_income=annuity_income,
             failure_year=failure_year,
-            alive_mask=alive_mask
+            alive_mask=alive_mask,
         )
 
     def run_monte_carlo(self) -> MonteCarloResults:
@@ -257,7 +257,7 @@ class RetirementSimulation:
             25: np.percentile(portfolio_paths, 25, axis=0),
             50: np.percentile(portfolio_paths, 50, axis=0),
             75: np.percentile(portfolio_paths, 75, axis=0),
-            90: np.percentile(portfolio_paths, 90, axis=0)
+            90: np.percentile(portfolio_paths, 90, axis=0),
         }
 
         return MonteCarloResults(
@@ -270,5 +270,5 @@ class RetirementSimulation:
             dividend_income=dividend_income,
             withdrawals=withdrawals,
             taxes_paid=taxes_paid,
-            annuity_income=annuity_income
+            annuity_income=annuity_income,
         )

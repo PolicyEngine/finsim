@@ -98,26 +98,22 @@ class BayesianMortalityModel:
                 Frequentist bootstrap: Resamples data, assumes model is correct
                 Bayesian: Full posterior, includes model uncertainty
             """,
-
             "Small Data": """
                 Frequentist: Needs lots of data for stable estimates
                 Bayesian: Can work with less data using informative priors
             """,
-
             "External Information": """
                 Frequentist: Can't easily incorporate expert opinion
                 Bayesian: Priors naturally include external knowledge
             """,
-
             "Hierarchical Models": """
                 Frequentist: Complex to fit multi-level models
                 Bayesian: Natural framework for hierarchical structures
             """,
-
             "Prediction": """
                 Frequentist: Confidence vs prediction intervals confusion
                 Bayesian: Posterior predictive distribution is natural
-            """
+            """,
         }
         return advantages
 
@@ -129,22 +125,19 @@ class BayesianMortalityModel:
                 MLE + Bootstrap: Fast, seconds to fit
                 Bayesian MCMC: Slow, minutes to hours
             """,
-
             "Tradition": """
                 Actuarial science traditionally frequentist
                 Lee-Carter (1992) was frequentist
                 Industry expects these methods
             """,
-
             "Simplicity": """
                 MLE: Standard optimization
                 Bayesian: Requires choosing priors, checking convergence
             """,
-
             "Software": """
                 2015 (when StMoMo released): PyMC3 just emerging
                 Now (2024): PyMC, NumPyro, Stan make Bayesian easier
-            """
+            """,
         }
         return reasons
 
@@ -246,7 +239,7 @@ def simple_bayesian_life_expectancy():
         def update(self, observed_deaths, exposure):
             """Update beliefs with observed data."""
             # Conjugate update for Beta-Binomial
-            self.alpha += (exposure - observed_deaths)
+            self.alpha += exposure - observed_deaths
             self.beta += observed_deaths
 
         def sample_life_expectancy(self, n_samples=1000):
@@ -286,7 +279,7 @@ if __name__ == "__main__":
     print("- Natural uncertainty quantification")
     print("- Better for small data, worse for speed")
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("For FinSim: Frequentist is fine!")
     print("- We have lots of mortality data")
     print("- Speed matters for web apps")

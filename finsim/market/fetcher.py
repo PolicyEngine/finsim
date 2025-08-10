@@ -34,14 +34,12 @@ class MarketDataFetcher:
     """Fetches and caches market data from various sources."""
 
     # Common ticker symbols
-    TICKER_VT = "VT"    # Vanguard Total World Stock ETF
+    TICKER_VT = "VT"  # Vanguard Total World Stock ETF
     TICKER_VOO = "VOO"  # Vanguard S&P 500 ETF
     TICKER_BND = "BND"  # Vanguard Total Bond Market ETF
     TICKER_GLD = "GLD"  # SPDR Gold Shares
 
-    def __init__(self,
-                 cache_dir: str | None = None,
-                 cache_expiry: timedelta = timedelta(days=1)):
+    def __init__(self, cache_dir: str | None = None, cache_expiry: timedelta = timedelta(days=1)):
         """Initialize the market data fetcher.
 
         Args:
@@ -56,10 +54,9 @@ class MarketDataFetcher:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_expiry = cache_expiry
 
-    def fetch_fund_data(self,
-                       ticker: str,
-                       years: int = 10,
-                       inflation_rate: float = 2.5) -> FundData:
+    def fetch_fund_data(
+        self, ticker: str, years: int = 10, inflation_rate: float = 2.5
+    ) -> FundData:
         """Fetch fund data with caching.
 
         Args:
@@ -84,10 +81,7 @@ class MarketDataFetcher:
         except Exception as e:
             raise ValueError(f"Failed to fetch data for {ticker}: {e}")
 
-    def _fetch_from_yfinance(self,
-                            ticker: str,
-                            years: int,
-                            inflation_rate: float) -> FundData:
+    def _fetch_from_yfinance(self, ticker: str, years: int, inflation_rate: float) -> FundData:
         """Fetch data from yfinance.
 
         Args:
@@ -114,7 +108,7 @@ class MarketDataFetcher:
             raise ValueError(f"No data available for {ticker}")
 
         # Calculate returns
-        returns = hist['Close'].pct_change().dropna()
+        returns = hist["Close"].pct_change().dropna()
 
         # Calculate statistics
         annual_return, volatility = self._calculate_statistics(returns)
@@ -124,9 +118,9 @@ class MarketDataFetcher:
 
         # Get fund info
         info = fund.info
-        name = info.get('longName', ticker)
-        dividend_yield = info.get('dividendYield', 0.0) * 100  # Convert to %
-        expense_ratio = info.get('expenseRatio', 0.0) * 100  # Convert to %
+        name = info.get("longName", ticker)
+        dividend_yield = info.get("dividendYield", 0.0) * 100  # Convert to %
+        expense_ratio = info.get("expenseRatio", 0.0) * 100  # Convert to %
 
         return FundData(
             ticker=ticker,
@@ -135,7 +129,7 @@ class MarketDataFetcher:
             volatility=volatility,
             dividend_yield=dividend_yield,
             expense_ratio=expense_ratio,
-            data_points=len(returns)
+            data_points=len(returns),
         )
 
     def _calculate_statistics(self, returns: pd.Series) -> tuple[float, float]:
@@ -177,7 +171,7 @@ class MarketDataFetcher:
             return None
 
         try:
-            with open(cache_file, 'rb') as f:
+            with open(cache_file, "rb") as f:
                 return pickle.load(f)
         except Exception as e:
             logger.warning(f"Failed to load cache: {e}")
@@ -193,7 +187,7 @@ class MarketDataFetcher:
         cache_file = self.cache_dir / f"{cache_key}.pkl"
 
         try:
-            with open(cache_file, 'wb') as f:
+            with open(cache_file, "wb") as f:
                 pickle.dump(data, f)
         except Exception as e:
             logger.warning(f"Failed to save cache: {e}")

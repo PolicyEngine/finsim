@@ -79,7 +79,7 @@ def calculate_survival_curve(start_age: int, end_age: int, gender="Male") -> np.
     for i, age in enumerate(ages):
         if i > 0:  # First year is always 1.0
             mort_rate = get_mortality_rate(age - 1, gender)
-            cumulative_survival *= (1 - mort_rate)
+            cumulative_survival *= 1 - mort_rate
         survival_probs[i] = cumulative_survival
 
     return survival_probs
