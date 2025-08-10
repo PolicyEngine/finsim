@@ -37,12 +37,26 @@ pip install "finsim[app]"
 
 ## Usage
 
+### Important: Always Use `uv run`
+
+⚠️ **Always use `uv run` to execute Python commands** to ensure the correct environment and dependencies:
+
+```bash
+# ✅ Correct
+uv run streamlit run app.py
+uv run python script.py
+uv run pytest tests/
+
+# ❌ Wrong - may cause numpy/PolicyEngine compatibility issues
+streamlit run app.py
+python script.py
+pytest tests/
+```
+
 Run the Streamlit app:
 
 ```bash
 uv run streamlit run app.py
-# or
-streamlit run app.py
 ```
 
 ## Components
@@ -108,6 +122,19 @@ The tool shows:
 - Proposal B (15-year certain): Higher IRR, fixed term
 - Proposal C (10-year certain): Highest monthly payment, shortest term
 - Index fund alternative: Higher expected return but ~20-35% depletion risk
+
+## Data Tracking
+
+The simulation maintains complete arrays for every simulation path and year:
+
+- **Portfolio Evolution**: Start/end values, cost basis tracking
+- **Income Components**: Dividends, capital gains, Social Security (with COLA), pensions, annuities
+- **Withdrawal Mechanics**: Gross withdrawals, taxable portions, net after-tax amounts
+- **Tax Tracking**: Taxes owed (current year) vs. paid (prior year liability)
+- **Life Events**: Mortality status, portfolio depletion year, estate values
+- **Inflation Adjustments**: SSA COLA (CPI-W) for Social Security, C-CPI-U for consumption
+
+This comprehensive tracking enables detailed analysis of success rates, tax efficiency, and withdrawal strategies across thousands of Monte Carlo scenarios.
 
 ## Limitations
 
