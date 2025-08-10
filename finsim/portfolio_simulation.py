@@ -48,6 +48,7 @@ def simulate_portfolio(
     
     # Optional parameters with defaults
     employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
+    consumption_inflation_rate: float = 2.5,  # Annual consumption inflation rate (e.g., 2.5 for 2.5% C-CPI-U)
     
     # Spouse parameters (optional)
     has_spouse: bool = False,
@@ -260,11 +261,17 @@ def simulate_portfolio(
         guaranteed_income = total_ss_pension + annuity_income[:, year-1] + total_employment
         total_income_available = guaranteed_income + dividends
         
-        # What we need to withdraw = consumption + last year's taxes - available income
+        # Calculate inflation-adjusted consumption for this year
+        # Consumption grows with inflation (C-CPI-U)
+        years_of_inflation = year - 1  # Years since start
+        inflation_factor = (1 + consumption_inflation_rate / 100) ** years_of_inflation
+        current_consumption = annual_consumption * inflation_factor
+        
+        # What we need to withdraw = inflation-adjusted consumption + last year's taxes - available income
         withdrawal_need = np.zeros(n_simulations)
         withdrawal_need[active] = np.maximum(
             0,
-            annual_consumption + prior_year_tax_liability[active] - total_income_available[active]
+            current_consumption + prior_year_tax_liability[active] - total_income_available[active]
         )
         
         # This is our actual gross withdrawal (no tax gross-up needed!)
