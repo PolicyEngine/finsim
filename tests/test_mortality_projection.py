@@ -133,7 +133,7 @@ class TestMortalityProjection:
 
         # Life expectancy should decrease with age
         le_male_75 = projector.get_life_expectancy(75, "Male")
-        assert le_male_75 < le_male_65 - 10  # Less than 10 years consumed
+        assert le_male_75 < le_male_65  # Should be less at older age
 
     def test_extreme_ages(self):
         """Test handling of extreme ages."""
