@@ -91,7 +91,10 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
-ignore = []
+ignore = [
+    "E501",  # line too long - handled by black
+    "F841",  # local variable assigned but never used
+]
 
 [tool.mypy]
 python_version = "3.13"
