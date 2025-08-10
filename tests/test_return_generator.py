@@ -86,11 +86,11 @@ class TestReturnGenerator:
             for j in range(i + 1, min(10, 100)):
                 corr = np.corrcoef(returns[i, :], returns[j, :])[0, 1]
                 correlations.append(abs(corr))
-        
+
         # Average correlation should be very low
         avg_corr = np.mean(correlations)
         assert avg_corr < 0.20, f"Average correlation {avg_corr:.3f} too high"
-        
+
         # No individual correlation should be extreme
         max_corr = np.max(correlations)
         assert max_corr < 0.5, f"Max correlation {max_corr:.3f} too high"
