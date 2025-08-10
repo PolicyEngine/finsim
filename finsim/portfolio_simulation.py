@@ -297,7 +297,7 @@ def simulate_portfolio(
     spouse_retirement_age: int = None,
     spouse_employment_growth_rate: float = 0.0,
     # Progress callback
-    progress_callback: callable | None = None,
+    progress_callback=None,
     # Gender for primary person (optional, defaults to Male)
     gender: str = "Male",
     # Enhanced mortality parameters (optional)
