@@ -245,9 +245,7 @@ class TaxCalculator:
             results = {
                 "federal_income_tax": sim.calculate("income_tax", self.year),
                 "state_income_tax": sim.calculate("state_income_tax", self.year),
-                "taxable_social_security": sim.calculate(
-                    "taxable_social_security", self.year
-                ),
+                "taxable_social_security": sim.calculate("taxable_social_security", self.year),
                 "adjusted_gross_income": sim.calculate("adjusted_gross_income", self.year),
                 "taxable_income": sim.calculate("taxable_income", self.year),
                 "standard_deduction": sim.calculate("standard_deduction", self.year),
