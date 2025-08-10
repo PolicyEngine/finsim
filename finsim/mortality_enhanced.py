@@ -21,7 +21,7 @@ class EnhancedMortality:
                  income_percentile: int | None = None,
                  health_status: Literal["excellent", "good", "average", "poor"] | None = None):
         """Initialize enhanced mortality calculator.
-        
+
         Args:
             gender: Gender for base rates
             use_bayesian: Whether to use Bayesian adjustments
@@ -40,10 +40,10 @@ class EnhancedMortality:
 
     def get_mortality_rate(self, age: int) -> float:
         """Get mortality rate for a specific age.
-        
+
         Args:
             age: Age in years
-            
+
         Returns:
             Annual mortality probability
         """
@@ -100,11 +100,11 @@ class EnhancedMortality:
 
     def get_vectorized_rates(self, ages: np.ndarray, n_simulations: int) -> np.ndarray:
         """Get mortality rates for multiple ages (vectorized).
-        
+
         Args:
             ages: Array of ages
             n_simulations: Number of simulations
-            
+
         Returns:
             Array of mortality rates
         """
@@ -118,12 +118,12 @@ class EnhancedMortality:
                          n_simulations: int,
                          n_years: int) -> tuple[np.ndarray, np.ndarray]:
         """Simulate survival paths.
-        
+
         Args:
             starting_age: Starting age
             n_simulations: Number of Monte Carlo paths
             n_years: Number of years to simulate
-            
+
         Returns:
             Tuple of (alive_mask, death_ages)
         """

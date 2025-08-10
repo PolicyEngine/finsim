@@ -11,11 +11,11 @@ def what_stmomo_does():
     2. Fit model: log(m_xt) = α_x + β_x * κ_t
     3. Find parameters that maximize likelihood
     4. Done - no external information used
-    
+
     Strengths: 
     - Lets the data speak for itself
     - No subjective choices
-    
+
     Weaknesses:
     - Ignores everything we know outside the dataset
     - Treats billionaire same as minimum wage worker
@@ -27,12 +27,12 @@ def what_i_proposed():
     1. Start with SSA tables (implicit prior)
     2. Adjust for personal factors (informal updating)
     3. Output adjusted rates (implicit posterior)
-    
+
     This IS Bayesian in spirit:
     - Prior: Population mortality
     - Likelihood: How your characteristics differ from average
     - Posterior: Your personalized mortality
-    
+
     Just not using Bayes' theorem explicitly!
     """
 
@@ -40,20 +40,20 @@ def truly_bayesian():
     """What formal Bayesian would look like."""
     return """
     # Formal Bayesian approach
-    
+
     # Prior (SSA tables converted to distribution)
     log_mortality ~ Normal(log(ssa_rate), uncertainty)
-    
+
     # Likelihood model for personal factors  
     if smoker:
         log_mortality += Normal(0.6, 0.1)  # ~80% higher, ±10%
-    
+
     if income_top_decile:
         log_mortality -= Normal(0.3, 0.05)  # ~30% lower, ±5%
-    
+
     # Posterior
     personal_mortality ~ P(mortality | data, characteristics)
-    
+
     # Now we have full distribution, not point estimate
     """
 

@@ -43,7 +43,7 @@ def validate_inputs(
     has_spouse: bool = False,
 ) -> None:
     """Validate all input parameters for portfolio simulation.
-    
+
     Raises:
         ValueError: If any input parameter is invalid.
     """
@@ -246,7 +246,7 @@ def simulate_portfolio(
 ) -> dict[str, np.ndarray]:
     """
     Run Monte Carlo simulation with next-year tax payment.
-    
+
     Key difference: We withdraw exactly what we need for consumption each year,
     then pay taxes the following year from that year's withdrawal.
     This is more realistic and avoids circular dependency.

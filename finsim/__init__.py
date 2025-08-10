@@ -57,6 +57,6 @@ def __getattr__(name):
         from .portfolio_simulation import simulate_portfolio
         return simulate_portfolio
     elif name in ["get_mortality_rates", "apply_mortality"]:
-        from .mortality import apply_mortality, get_mortality_rates
+        from .mortality import apply_mortality, get_mortality_rates  # noqa: F401
         return locals()[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

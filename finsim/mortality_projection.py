@@ -39,7 +39,7 @@ import numpy as np
 @dataclass
 class MortalityProjectionParams:
     """Parameters for mortality projection.
-    
+
     Default values based on SOA Mortality Improvement Scale MP-2014 and
     subsequent research on mortality improvements.
     """
@@ -54,7 +54,7 @@ class MortalityProjector:
 
     def __init__(self, params: MortalityProjectionParams | None = None):
         """Initialize mortality projector.
-        
+
         Args:
             params: Projection parameters (uses defaults if None)
         """
@@ -63,7 +63,7 @@ class MortalityProjector:
 
     def _load_base_mortality(self) -> dict[str, dict[int, float]]:
         """Load base mortality rates (2021 SSA Period Life Table).
-        
+
         Returns:
             Dict with 'Male' and 'Female' mortality rates by age
         """
@@ -124,12 +124,12 @@ class MortalityProjector:
                                     gender: str,
                                     projection_year: int) -> float:
         """Get mortality rate with cohort-based projections.
-        
+
         Args:
             current_age: Current age of person
             gender: "Male" or "Female"
             projection_year: Year for which to project mortality
-            
+
         Returns:
             Projected mortality rate (qx)
         """
@@ -185,14 +185,14 @@ class MortalityProjector:
                          start_year: int = 2025,
                          n_simulations: int = 1000) -> np.ndarray:
         """Simulate survival paths using projected mortality.
-        
+
         Args:
             current_age: Starting age
             gender: "Male" or "Female"
             n_years: Number of years to simulate
             start_year: Starting year for projection
             n_simulations: Number of Monte Carlo simulations
-            
+
         Returns:
             Boolean array of shape (n_simulations, n_years + 1) indicating survival
         """
@@ -224,13 +224,13 @@ class MortalityProjector:
                            start_year: int = 2025,
                            max_age: int = 120) -> float:
         """Calculate cohort life expectancy with projections.
-        
+
         Args:
             current_age: Current age
             gender: "Male" or "Female"
             start_year: Starting year for projection
             max_age: Maximum age to consider
-            
+
         Returns:
             Expected remaining years of life
         """
@@ -258,10 +258,10 @@ class MortalityProjector:
 
 def get_mortality_projector(wealth_level: str | None = "average") -> MortalityProjector:
     """Get a mortality projector configured for wealth level.
-    
+
     Args:
         wealth_level: "low", "average", or "high"
-        
+
     Returns:
         Configured mortality projector
     """

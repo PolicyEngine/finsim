@@ -98,7 +98,9 @@ class TestInputValidation:
         params = self.get_valid_params()
         params['current_age'] = 65
         params['retirement_age'] = 60
-        with pytest.raises(ValueError, match="retirement_age .* cannot be less than current_age"):
+        with pytest.raises(
+            ValueError, match="retirement_age .* cannot be less than current_age"
+        ):
             validate_inputs(**params)
 
     def test_negative_social_security(self):
@@ -199,7 +201,9 @@ class TestInputValidation:
         params['spouse_age'] = 63
         params['spouse_gender'] = 'Female'
         params['spouse_social_security'] = -5_000
-        with pytest.raises(ValueError, match="spouse_social_security cannot be negative"):
+        with pytest.raises(
+            ValueError, match="spouse_social_security cannot be negative"
+        ):
             validate_inputs(**params)
 
     def test_spouse_retirement_before_age(self):
@@ -209,7 +213,10 @@ class TestInputValidation:
         params['spouse_age'] = 65
         params['spouse_gender'] = 'Female'
         params['spouse_retirement_age'] = 60
-        with pytest.raises(ValueError, match="spouse_retirement_age .* cannot be less than spouse_age"):
+        with pytest.raises(
+            ValueError,
+            match="spouse_retirement_age .* cannot be less than spouse_age"
+        ):
             validate_inputs(**params)
 
     def test_all_valid_states(self):

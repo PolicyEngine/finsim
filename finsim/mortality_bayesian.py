@@ -16,7 +16,7 @@ import numpy as np
 @dataclass
 class BayesianMortalityModel:
     """A Bayesian approach to mortality modeling.
-    
+
     Key differences from StMoMo (frequentist):
     1. Priors on all parameters based on expert knowledge
     2. Full posterior distributions, not point estimates
@@ -26,26 +26,26 @@ class BayesianMortalityModel:
 
     def conceptual_model(self):
         """Show what a Bayesian Lee-Carter model would look like.
-        
+
         This is pseudocode - real implementation would use PyMC or NumPyro.
         """
         model_spec = """
         # Bayesian Lee-Carter Model
         # log(m_xt) = α_x + β_x * κ_t + ε_xt
-        
+
         import pymc as pm
-        
+
         with pm.Model() as mortality_model:
-            
+
             # PRIORS (this is what makes it Bayesian!)
-            
+
             # Age effect - smooth across ages
             α_x = pm.GaussianRandomWalk(
                 'alpha', 
                 sigma=0.01,  # Smooth changes between ages
                 shape=n_ages
             )
-            
+
             # Age-sensitivity to time trend
             β_x = pm.Normal(
                 'beta',
@@ -53,31 +53,31 @@ class BayesianMortalityModel:
                 sigma=0.005,  # Fairly confident about this
                 shape=n_ages
             )
-            
+
             # Time trend - mortality improvements
             κ_t = pm.GaussianRandomWalk(
                 'kappa',
                 sigma=0.1,  # Year-to-year variation
                 shape=n_years  
             )
-            
+
             # Observation noise
             σ = pm.HalfNormal('sigma', 0.1)
-            
+
             # LIKELIHOOD
-            
+
             # Expected log mortality
             log_m = α_x[age_idx] + β_x[age_idx] * κ_t[year_idx]
-            
+
             # Observed deaths ~ Poisson(exposure * exp(log_m))
             deaths = pm.Poisson(
                 'deaths',
                 mu=exposure * pm.math.exp(log_m),
                 observed=observed_deaths
             )
-            
+
             # INFERENCE
-            
+
             # Modern Bayesian inference using NUTS sampler
             trace = pm.sample(
                 draws=2000,
@@ -85,7 +85,7 @@ class BayesianMortalityModel:
                 chains=4,
                 target_accept=0.95
             )
-        
+
         return trace
         """
         return model_spec
@@ -151,7 +151,7 @@ class BayesianMortalityModel:
 
 def modern_bayesian_mortality():
     """If building mortality projection today, here's the Bayesian approach.
-    
+
     Using NumPyro (JAX-based) for speed:
     """
 
@@ -161,24 +161,24 @@ def modern_bayesian_mortality():
     from numpyro.infer import MCMC, NUTS
     import jax.numpy as jnp
     import jax
-    
+
     def mortality_model(ages, years, exposure, deaths=None):
         '''Modern Bayesian mortality model using NumPyro.
-        
+
         This is 10-100x faster than PyMC and can run on GPU.
         '''
-        
+
         n_ages = len(np.unique(ages))
         n_years = len(np.unique(years))
-        
+
         # Priors based on demographic research
         with numpyro.plate("ages", n_ages):
             # Log base mortality by age
             log_a = numpyro.sample("log_a", dist.Normal(-5, 2))
-            
+
             # Mortality improvement sensitivity  
             b = numpyro.sample("b", dist.HalfNormal(0.02))
-        
+
         # Mortality improvement trend (with drift)
         drift = numpyro.sample("drift", dist.Normal(-0.01, 0.005))
         with numpyro.plate("years", n_years):
@@ -186,11 +186,11 @@ def modern_bayesian_mortality():
                 k = numpyro.sample("k", dist.Normal(k_prev + drift, 0.1))
             else:
                 k = numpyro.sample("k", dist.Normal(0, 1))
-        
+
         # Expected deaths
         log_m = log_a[ages] + b[ages] * k[years]
         expected_deaths = exposure * jnp.exp(log_m)
-        
+
         # Likelihood - negative binomial for overdispersion
         with numpyro.plate("observations", len(deaths)):
             numpyro.sample(
@@ -198,21 +198,21 @@ def modern_bayesian_mortality():
                 dist.NegativeBinomial2(expected_deaths, concentration=10),
                 obs=deaths
             )
-    
+
     # Fast inference with NUTS
     kernel = NUTS(mortality_model)
     mcmc = MCMC(kernel, num_warmup=1000, num_samples=2000, num_chains=4)
     mcmc.run(jax.random.PRNGKey(0), ages, years, exposure, deaths)
-    
+
     # Get posterior samples
     posterior = mcmc.get_samples()
-    
+
     # Posterior predictive for future years
     predictive = numpyro.infer.Predictive(
         mortality_model,
         posterior_samples=posterior
     )
-    
+
     future_deaths = predictive(
         jax.random.PRNGKey(1),
         future_ages,
@@ -226,7 +226,7 @@ def modern_bayesian_mortality():
 
 def simple_bayesian_life_expectancy():
     """Simplest Bayesian approach for practitioners.
-    
+
     Instead of complex models, just be Bayesian about uncertainty:
     """
 
@@ -234,7 +234,7 @@ def simple_bayesian_life_expectancy():
     class SimpleeBayesian:
         def __init__(self, prior_mean_le=20, prior_confidence=10):
             """Initialize with prior beliefs about life expectancy.
-            
+
             Args:
                 prior_mean_le: Prior mean life expectancy at 65
                 prior_confidence: How many 'observations' worth of confidence

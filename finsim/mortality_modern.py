@@ -23,7 +23,7 @@ import numpy as np
 @dataclass
 class MortalityAssumptions:
     """User-friendly mortality assumptions.
-    
+
     Instead of abstract statistical parameters, use concepts that 
     financial planners and individuals can understand.
     """
@@ -41,7 +41,7 @@ class MortalityAssumptions:
 
     def get_multiplier(self) -> float:
         """Convert assumptions to a mortality multiplier.
-        
+
         Based on research from:
         - Chetty et al. (2016): Income gaps
         - Case & Deaton (2017): Education effects  
@@ -97,7 +97,7 @@ class MortalityAssumptions:
 
 class PracticalMortalityModel:
     """Practical mortality model for financial planning.
-    
+
     This is what I'd build instead of porting StMoMo:
     - Pre-calibrated to recent data
     - Fast simulation
@@ -109,7 +109,7 @@ class PracticalMortalityModel:
                  gender: Literal["male", "female"],
                  assumptions: MortalityAssumptions | None = None):
         """Initialize mortality model.
-        
+
         Args:
             gender: Biological sex for base mortality
             assumptions: Personal factors affecting mortality
@@ -120,7 +120,7 @@ class PracticalMortalityModel:
 
     def _load_base_rates(self) -> dict[int, float]:
         """Load base mortality rates.
-        
+
         In production, these would come from:
         - Human Mortality Database for general population
         - SOA tables for insured populations
@@ -146,11 +146,11 @@ class PracticalMortalityModel:
 
     def get_mortality_rate(self, age: int, years_from_now: int = 0) -> float:
         """Get mortality rate with improvements and adjustments.
-        
+
         Args:
             age: Current age
             years_from_now: Years in future (for improvements)
-            
+
         Returns:
             Adjusted mortality rate (qx)
         """
@@ -176,12 +176,12 @@ class PracticalMortalityModel:
                          n_simulations: int = 1000,
                          max_age: int = 120) -> np.ndarray:
         """Simulate lifetimes using Monte Carlo.
-        
+
         Args:
             current_age: Starting age
             n_simulations: Number of simulations
             max_age: Maximum possible age
-            
+
         Returns:
             Array of death ages (max_age if survived to max)
         """
@@ -202,11 +202,11 @@ class PracticalMortalityModel:
                       current_age: int,
                       max_age: int = 120) -> tuple[np.ndarray, np.ndarray]:
         """Get expected survival curve.
-        
+
         Args:
             current_age: Starting age
             max_age: Maximum age to project
-            
+
         Returns:
             Tuple of (ages, survival_probabilities)
         """
@@ -222,10 +222,10 @@ class PracticalMortalityModel:
 
     def life_expectancy(self, current_age: int) -> float:
         """Calculate cohort life expectancy.
-        
+
         Args:
             current_age: Current age
-            
+
         Returns:
             Expected remaining years of life
         """
@@ -236,19 +236,19 @@ class PracticalMortalityModel:
 
 def compare_to_stmomo():
     """Show how this compares to StMoMo approach.
-    
+
     StMoMo fits statistical models to historical data:
     - log(m_xt) = α_x + β_x * κ_t + γ_t-x  (Lee-Carter with cohort)
     - Requires decades of death/exposure data
     - Estimates parameters via maximum likelihood
     - Projects κ_t using ARIMA models
-    
+
     Our approach uses pre-calibrated rates with adjustments:
     - Start with recent official life tables
     - Apply research-based personal adjustments
     - Use scenario-based improvement assumptions
     - Optimize for simulation speed
-    
+
     Trade-offs:
     - StMoMo: Rigorous but requires data and expertise
     - Ours: Practical and fast but less flexible

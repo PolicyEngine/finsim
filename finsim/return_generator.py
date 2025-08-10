@@ -17,7 +17,7 @@ class ReturnGenerator:
                  volatility: float = 0.15,
                  seed: int | None = None):
         """Initialize the return generator.
-        
+
         Args:
             expected_return: Annual expected return (e.g., 0.07 for 7%)
             volatility: Annual volatility (e.g., 0.15 for 15%)
@@ -34,11 +34,11 @@ class ReturnGenerator:
                         n_simulations: int,
                         n_years: int) -> np.ndarray:
         """Generate matrix of annual returns (as growth factors).
-        
+
         Args:
             n_simulations: Number of simulations
             n_years: Number of years
-            
+
         Returns:
             Array of shape (n_simulations, n_years) with growth factors
             (e.g., 1.07 for 7% return)
@@ -90,7 +90,7 @@ class ReturnGenerator:
 
     def _regenerate_single_simulation(self, n_years: int) -> np.ndarray:
         """Regenerate a single simulation if it had repeated values.
-        
+
         This is a safety fallback that should rarely be needed.
         """
         z = np.random.randn(n_years)
@@ -104,14 +104,14 @@ class ReturnGenerator:
                                          n_years: int,
                                          correlation: float = 0.0) -> np.ndarray:
         """Generate returns with correlation between consecutive years.
-        
+
         This can be used to model momentum or mean reversion.
-        
+
         Args:
             n_simulations: Number of simulations
             n_years: Number of years
             correlation: Correlation between consecutive years (-1 to 1)
-            
+
         Returns:
             Array of shape (n_simulations, n_years) with growth factors
         """

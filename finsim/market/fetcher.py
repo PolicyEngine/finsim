@@ -43,7 +43,7 @@ class MarketDataFetcher:
                  cache_dir: str | None = None,
                  cache_expiry: timedelta = timedelta(days=1)):
         """Initialize the market data fetcher.
-        
+
         Args:
             cache_dir: Directory for caching data
             cache_expiry: How long to cache data
@@ -61,12 +61,12 @@ class MarketDataFetcher:
                        years: int = 10,
                        inflation_rate: float = 2.5) -> FundData:
         """Fetch fund data with caching.
-        
+
         Args:
             ticker: Fund ticker symbol
             years: Years of historical data to use
             inflation_rate: Annual inflation rate for real return calculation
-            
+
         Returns:
             FundData object with statistics
         """
@@ -89,12 +89,12 @@ class MarketDataFetcher:
                             years: int,
                             inflation_rate: float) -> FundData:
         """Fetch data from yfinance.
-        
+
         Args:
             ticker: Fund ticker symbol
             years: Years of historical data
             inflation_rate: Annual inflation rate
-            
+
         Returns:
             FundData object
         """
@@ -140,10 +140,10 @@ class MarketDataFetcher:
 
     def _calculate_statistics(self, returns: pd.Series) -> tuple[float, float]:
         """Calculate annualized return and volatility.
-        
+
         Args:
             returns: Daily returns series
-            
+
         Returns:
             Tuple of (annual_return %, annual_volatility %)
         """
@@ -159,10 +159,10 @@ class MarketDataFetcher:
 
     def _get_from_cache(self, cache_key: str) -> FundData | None:
         """Get data from cache if available and not expired.
-        
+
         Args:
             cache_key: Cache key
-            
+
         Returns:
             FundData if cached and valid, None otherwise
         """
@@ -185,7 +185,7 @@ class MarketDataFetcher:
 
     def _save_to_cache(self, cache_key: str, data: FundData):
         """Save data to cache.
-        
+
         Args:
             cache_key: Cache key
             data: Data to cache

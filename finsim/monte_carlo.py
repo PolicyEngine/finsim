@@ -24,7 +24,7 @@ except ImportError:
 class MonteCarloSimulator:
     """
     Monte Carlo simulator for retirement planning with tax-aware withdrawals.
-    
+
     Features:
     - Vectorized tax calculations via PolicyEngine-US
     - Optional historical data calibration
@@ -45,7 +45,7 @@ class MonteCarloSimulator:
     ):
         """
         Initialize Monte Carlo simulator.
-        
+
         Args:
             initial_capital: Starting investment amount
             target_after_tax_monthly: Desired monthly after-tax income
@@ -84,7 +84,7 @@ class MonteCarloSimulator:
     ) -> None:
         """
         Fit parameters to historical data.
-        
+
         Args:
             ticker: Stock ticker for calibration
             lookback_years: Years of history to use
@@ -121,13 +121,13 @@ class MonteCarloSimulator:
     ) -> dict:
         """
         Run tax-aware Monte Carlo simulation.
-        
+
         Args:
             n_years: Simulation horizon in years
             initial_taxable_fraction: Starting fraction of withdrawals that are gains
             taxable_fraction_increase: Annual increase in taxable fraction
             cola_rate: Social Security COLA adjustment rate
-            
+
         Returns:
             Dictionary with simulation results
         """
@@ -273,12 +273,12 @@ class MonteCarloSimulator:
     ) -> dict:
         """
         Compare Monte Carlo results to an annuity option.
-        
+
         Args:
             annuity_monthly_payment: Monthly annuity payment
             annuity_guarantee_years: Guaranteed payment period
             simulation_results: Pre-computed simulation results
-            
+
         Returns:
             Comparison metrics
         """

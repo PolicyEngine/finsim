@@ -16,13 +16,13 @@ def get_inflation_factors(
     use_actual_cpi: bool = False
 ) -> np.ndarray:
     """Get inflation factors for each year of simulation.
-    
+
     Args:
         start_year: Starting year of simulation
         n_years: Number of years to simulate
         fixed_rate: Fixed annual inflation rate (as percentage, e.g., 2.5 for 2.5%)
         use_actual_cpi: Whether to use actual C-CPI-U data from PolicyEngine
-        
+
     Returns:
         Array of cumulative inflation factors (1.0 for year 1, then compounding)
     """
@@ -48,15 +48,17 @@ def get_inflation_factors(
                     # Try December of the year
                     period = instant(f"{current_year}-12-01")
                     cpi = parameters.gov.bls.cpi.c_cpi_u(period)
-                except:
+                except Exception:
                     # Fall back to January of next year if December not available
                     try:
                         period = instant(f"{current_year+1}-01-01")
                         cpi = parameters.gov.bls.cpi.c_cpi_u(period)
-                    except:
+                    except Exception:
                         # If future year, use fixed rate
                         if year > 0:
-                            inflation_factors[year] = inflation_factors[year-1] * (1 + fixed_rate / 100)
+                            inflation_factors[year] = (
+                            inflation_factors[year-1] * (1 + fixed_rate / 100)
+                        )
                         continue
 
                 if base_cpi is None:
@@ -86,12 +88,12 @@ def inflate_value(
     inflation_factors: np.ndarray
 ) -> float:
     """Inflate a base value to a specific year.
-    
+
     Args:
         base_value: Value in base year dollars
         year_index: Year index (0-based)
         inflation_factors: Array of cumulative inflation factors
-        
+
     Returns:
         Inflated value
     """
@@ -106,13 +108,13 @@ def calculate_real_return(
     inflation_rate: float
 ) -> float:
     """Calculate real return from nominal return and inflation.
-    
+
     Uses the Fisher equation: (1 + r_real) = (1 + r_nominal) / (1 + inflation)
-    
+
     Args:
         nominal_return: Nominal return rate (as decimal, e.g., 0.07 for 7%)
         inflation_rate: Inflation rate (as decimal, e.g., 0.025 for 2.5%)
-        
+
     Returns:
         Real return rate (as decimal)
     """

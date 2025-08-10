@@ -26,10 +26,10 @@ SSA_MALE_MORTALITY, SSA_FEMALE_MORTALITY = load_mortality_data()
 
 def get_mortality_rates(gender="Male"):
     """Get mortality rates for the specified gender.
-    
+
     Args:
         gender: "Male" or "Female"
-    
+
     Returns:
         Dictionary mapping age to annual mortality probability
     """
@@ -41,11 +41,11 @@ def get_mortality_rates(gender="Male"):
 
 def get_mortality_rate(age: int, gender="Male") -> float:
     """Get mortality rate for a specific age.
-    
+
     Args:
         age: Age in years
         gender: "Male" or "Female"
-    
+
     Returns:
         Annual mortality probability
     """
@@ -63,12 +63,12 @@ def get_mortality_rate(age: int, gender="Male") -> float:
 
 def calculate_survival_curve(start_age: int, end_age: int, gender="Male") -> np.ndarray:
     """Calculate survival probabilities from start_age to end_age.
-    
+
     Args:
         start_age: Starting age
         end_age: Ending age (inclusive)
         gender: "Male" or "Female"
-    
+
     Returns:
         Array of cumulative survival probabilities
     """
@@ -87,12 +87,12 @@ def calculate_survival_curve(start_age: int, end_age: int, gender="Male") -> np.
 
 def calculate_life_expectancy(age: int, gender="Male", max_age=120) -> float:
     """Calculate remaining life expectancy for a given age.
-    
+
     Args:
         age: Current age
         gender: "Male" or "Female"
         max_age: Maximum age to consider
-    
+
     Returns:
         Expected remaining years of life
     """

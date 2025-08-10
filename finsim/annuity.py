@@ -36,7 +36,7 @@ class AnnuityCalculator:
     def __init__(self, age: int = 65, gender: str = "male"):
         """
         Initialize annuity calculator.
-        
+
         Args:
             age: Current age
             gender: Gender for mortality tables
@@ -53,13 +53,13 @@ class AnnuityCalculator:
     ) -> float:
         """
         Calculate internal rate of return for an annuity.
-        
+
         Args:
             premium: Upfront premium payment
             monthly_payment: Monthly benefit payment
             guarantee_months: Guaranteed payment period in months
             life_contingent: Whether payments continue for life after guarantee
-            
+
         Returns:
             Annual internal rate of return
         """
@@ -76,7 +76,7 @@ class AnnuityCalculator:
                 monthly_irr = npf.irr(cash_flows)
                 annual_irr = (1 + monthly_irr) ** 12 - 1
                 return annual_irr
-            except:
+            except Exception:
                 # If np.irr fails, use scipy optimize
                 def npv(rate):
                     return sum(cf / (1 + rate) ** i for i, cf in enumerate(cash_flows))
@@ -85,12 +85,14 @@ class AnnuityCalculator:
                     monthly_irr = optimize.brentq(npv, -0.99, 10, xtol=1e-6)
                     annual_irr = (1 + monthly_irr) ** 12 - 1
                     return annual_irr
-                except:
+                except Exception:
                     # If optimization fails, return approximation
                     total_payments = monthly_payment * guarantee_months
                     if premium == 0:
                         return 0.0
-                    return (total_payments / premium) ** (12 / guarantee_months) - 1 if guarantee_months > 0 else -1.0
+                    if guarantee_months > 0:
+                        return (total_payments / premium) ** (12 / guarantee_months) - 1
+                    return -1.0
         else:
             # Life contingent annuity - use survival probabilities
             return self._calculate_life_contingent_irr(
@@ -105,12 +107,12 @@ class AnnuityCalculator:
     ) -> float:
         """
         Calculate IRR for life-contingent annuity using mortality tables.
-        
+
         Args:
             premium: Upfront premium
             monthly_payment: Monthly payment
             guarantee_months: Guaranteed period
-            
+
         Returns:
             Expected IRR based on mortality
         """
@@ -138,7 +140,7 @@ class AnnuityCalculator:
             monthly_irr = npf.irr(cash_flows)
             annual_irr = (1 + monthly_irr) ** 12 - 1
             return annual_irr
-        except:
+        except Exception:
             # Fallback calculation
             def npv(rate):
                 return sum(cf / (1 + rate) ** i for i, cf in enumerate(cash_flows))
@@ -147,7 +149,7 @@ class AnnuityCalculator:
                 monthly_irr = optimize.brentq(npv, -0.99, 0.5, xtol=1e-6)
                 annual_irr = (1 + monthly_irr) ** 12 - 1
                 return annual_irr
-            except:
+            except Exception:
                 # If optimization fails, return simple approximation
                 total_expected = sum(cash_flows[1:])
                 years = len(cash_flows) / 12
@@ -159,10 +161,10 @@ class AnnuityCalculator:
     ) -> pd.DataFrame:
         """
         Compare multiple annuity proposals.
-        
+
         Args:
             proposals: List of dictionaries with annuity details
-            
+
         Returns:
             DataFrame with comparison metrics
         """
@@ -200,12 +202,12 @@ class AnnuityCalculator:
     ) -> float:
         """
         Calculate present value of annuity payments.
-        
+
         Args:
             monthly_payment: Monthly payment amount
             months: Number of months
             discount_rate: Annual discount rate
-            
+
         Returns:
             Present value
         """

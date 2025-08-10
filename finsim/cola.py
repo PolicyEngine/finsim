@@ -46,11 +46,11 @@ C_CPI_U = {
 
 def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
     """Get Social Security COLA factors using actual SSA uprating schedule.
-    
+
     Args:
         start_year: Starting year of simulation
         n_years: Number of years to simulate
-        
+
     Returns:
         Array of cumulative COLA factors (1.0 for year 1, then compounding)
     """
@@ -78,8 +78,8 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
 
                 period = instant(f"{current_year}-01-01")
                 uprating = parameters.gov.ssa.uprating(period)
-            except:
-                # For years beyond available data, use 2.2% annual growth (long-term average)
+            except Exception:
+                # For years beyond available data, use 2.2% annual growth (long-term avg)
                 if year_idx > 0:
                     prev_year = start_year + year_idx - 1
                     if prev_year in SSA_UPRATING:
@@ -101,11 +101,11 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
 
 def get_consumption_inflation_factors(start_year: int, n_years: int) -> np.ndarray:
     """Get consumption inflation factors using C-CPI-U from PolicyEngine-US.
-    
+
     Args:
         start_year: Starting year of simulation
         n_years: Number of years to simulate
-        
+
     Returns:
         Array of cumulative inflation factors (1.0 for year 1, then compounding)
     """
@@ -156,7 +156,11 @@ if __name__ == "__main__":
                 print(f"  {year}: {cola_factors[i]:.3f} (base year)")
             else:
                 annual_rate = (cola_factors[i] / cola_factors[i-1] - 1) * 100
-                print(f"  {year}: {cola_factors[i]:.3f} ({annual_rate:.1f}% annual, {(cola_factors[i]-1)*100:.1f}% cumulative)")
+                cumulative = (cola_factors[i] - 1) * 100
+                print(
+                    f"  {year}: {cola_factors[i]:.3f} "
+                    f"({annual_rate:.1f}% annual, {cumulative:.1f}% cumulative)"
+                )
 
         # Test C-CPI-U
         inflation_factors = get_consumption_inflation_factors(2025, 10)
@@ -167,7 +171,11 @@ if __name__ == "__main__":
                 print(f"  {year}: {inflation_factors[i]:.3f} (base year)")
             else:
                 annual_rate = (inflation_factors[i] / inflation_factors[i-1] - 1) * 100
-                print(f"  {year}: {inflation_factors[i]:.3f} ({annual_rate:.1f}% annual, {(inflation_factors[i]-1)*100:.1f}% cumulative)")
+                cumulative = (inflation_factors[i] - 1) * 100
+                print(
+                    f"  {year}: {inflation_factors[i]:.3f} "
+                    f"({annual_rate:.1f}% annual, {cumulative:.1f}% cumulative)"
+                )
 
     except ImportError as e:
         print(f"Error: {e}")

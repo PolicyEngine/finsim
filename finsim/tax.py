@@ -147,7 +147,7 @@ class TaxCalculator:
     ) -> dict[str, np.ndarray]:
         """
         Calculate taxes for a batch of scenarios using PolicyEngine-US.
-        
+
         This efficiently processes all scenarios in a single PolicyEngine call,
         providing accurate federal and state tax calculations based on actual tax law.
         """
