@@ -49,6 +49,7 @@ def simulate_portfolio(
     # Optional parameters with defaults
     employment_growth_rate: float = 0.0,  # Annual nominal wage growth percentage (e.g., 3.0 for 3%)
     consumption_inflation_rate: float = 2.5,  # Annual consumption inflation rate (e.g., 2.5 for 2.5% C-CPI-U)
+    social_security_cola_rate: float = 2.3,  # Annual Social Security COLA (e.g., 2.3 for 2.3% based on CPI-W)
     
     # Spouse parameters (optional)
     has_spouse: bool = False,
@@ -254,9 +255,18 @@ def simulate_portfolio(
             spouse_ss = np.where(spouse_alive_mask[:, year], spouse_social_security, 0)
             spouse_pens = np.where(spouse_alive_mask[:, year], spouse_pension, 0)
         
+        # Apply COLA to Social Security benefits (using CPI-W based adjustment)
+        # Note: Pensions typically don't have COLA unless specified
+        years_of_cola = year - 1  # Years since start
+        cola_factor = (1 + social_security_cola_rate / 100) ** years_of_cola
+        
+        # Apply COLA to Social Security (but not pensions, which typically don't have COLA)
+        current_social_security = social_security * cola_factor
+        current_spouse_ss = spouse_ss * cola_factor
+        
         # Total household income
         total_employment = wages + spouse_wages
-        total_ss_pension = social_security + pension + spouse_ss + spouse_pens
+        total_ss_pension = current_social_security + pension + current_spouse_ss + spouse_pens
         
         guaranteed_income = total_ss_pension + annuity_income[:, year-1] + total_employment
         total_income_available = guaranteed_income + dividends
