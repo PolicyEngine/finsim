@@ -31,9 +31,9 @@ Implementation Notes:
 - Improvements taper after age 85 following actuarial practice
 """
 
-import numpy as np
-from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass
@@ -51,8 +51,8 @@ class MortalityProjectionParams:
 
 class MortalityProjector:
     """Advanced mortality projector with cohort adjustments and improvements."""
-    
-    def __init__(self, params: Optional[MortalityProjectionParams] = None):
+
+    def __init__(self, params: MortalityProjectionParams | None = None):
         """Initialize mortality projector.
         
         Args:
@@ -60,8 +60,8 @@ class MortalityProjector:
         """
         self.params = params or MortalityProjectionParams()
         self._base_mortality = self._load_base_mortality()
-    
-    def _load_base_mortality(self) -> Dict[str, Dict[int, float]]:
+
+    def _load_base_mortality(self) -> dict[str, dict[int, float]]:
         """Load base mortality rates (2021 SSA Period Life Table).
         
         Returns:
@@ -92,7 +92,7 @@ class MortalityProjector:
             111: 0.94855, 112: 1.00000, 113: 1.00000, 114: 1.00000, 115: 1.00000,
             116: 1.00000, 117: 1.00000, 118: 1.00000, 119: 1.00000, 120: 1.00000
         }
-        
+
         female = {
             18: 0.00033, 19: 0.00034, 20: 0.00036,
             21: 0.00038, 22: 0.00040, 23: 0.00042, 24: 0.00044, 25: 0.00046,
@@ -116,10 +116,10 @@ class MortalityProjector:
             111: 0.77738, 112: 0.83432, 113: 0.89384, 114: 0.95595, 115: 1.00000,
             116: 1.00000, 117: 1.00000, 118: 1.00000, 119: 1.00000, 120: 1.00000
         }
-        
+
         return {"Male": male, "Female": female}
-    
-    def get_projected_mortality_rate(self, 
+
+    def get_projected_mortality_rate(self,
                                     current_age: int,
                                     gender: str,
                                     projection_year: int) -> float:
@@ -135,32 +135,32 @@ class MortalityProjector:
         """
         # Get base mortality rate
         base_rates = self._base_mortality[gender]
-        
+
         # Handle ages outside table
         if current_age < 18:
             return 0.0001  # Very low mortality for young ages
         if current_age > 120:
             return 1.0  # Certain death past 120
-        
+
         # Interpolate if age not in table
         if current_age not in base_rates:
             ages = sorted(base_rates.keys())
             lower_age = max([a for a in ages if a < current_age], default=ages[0])
             upper_age = min([a for a in ages if a > current_age], default=ages[-1])
-            
+
             if lower_age == upper_age:
                 base_rate = base_rates[lower_age]
             else:
                 # Linear interpolation
                 weight = (current_age - lower_age) / (upper_age - lower_age)
-                base_rate = (base_rates[lower_age] * (1 - weight) + 
+                base_rate = (base_rates[lower_age] * (1 - weight) +
                            base_rates[upper_age] * weight)
         else:
             base_rate = base_rates[current_age]
-        
+
         # Apply mortality improvements
         years_of_improvement = projection_year - self.params.base_year
-        
+
         # Improvement rate decreases with age
         if current_age <= self.params.max_improvement_age:
             improvement_factor = self.params.mortality_improvement_rate
@@ -168,16 +168,16 @@ class MortalityProjector:
             # Linear taper from max_improvement_age to 120
             age_factor = max(0, (120 - current_age) / (120 - self.params.max_improvement_age))
             improvement_factor = self.params.mortality_improvement_rate * age_factor
-        
+
         # Apply compound improvement
         improvement_multiplier = (1 - improvement_factor) ** years_of_improvement
-        
+
         # Apply socioeconomic adjustment
         adjusted_rate = base_rate * improvement_multiplier * self.params.socioeconomic_multiplier
-        
+
         # Ensure rate is in valid range
         return np.clip(adjusted_rate, 0.0, 1.0)
-    
+
     def simulate_survival(self,
                          current_age: int,
                          gender: str,
@@ -197,27 +197,27 @@ class MortalityProjector:
             Boolean array of shape (n_simulations, n_years + 1) indicating survival
         """
         alive = np.ones((n_simulations, n_years + 1), dtype=bool)
-        
+
         for year in range(1, n_years + 1):
             age = current_age + year
             projection_year = start_year + year
-            
+
             # Get projected mortality rate
             mortality_rate = self.get_projected_mortality_rate(
                 age, gender, projection_year
             )
-            
+
             # Simulate deaths
             random_draws = np.random.random(n_simulations)
             deaths = random_draws < mortality_rate
-            
+
             # Update survival status
             # Once dead, stay dead
             currently_alive = alive[:, year - 1]
             alive[deaths & currently_alive, year:] = False
-        
+
         return alive
-    
+
     def get_life_expectancy(self,
                            current_age: int,
                            gender: str,
@@ -237,26 +237,26 @@ class MortalityProjector:
         years = max_age - current_age
         survival_prob = 1.0
         life_expectancy = 0.0
-        
+
         for year in range(years):
             age = current_age + year
             projection_year = start_year + year
-            
+
             # Get mortality rate for this year
             mortality_rate = self.get_projected_mortality_rate(
                 age, gender, projection_year
             )
-            
+
             # Add fractional year survived
             life_expectancy += survival_prob * (1 - mortality_rate / 2)
-            
+
             # Update survival probability
             survival_prob *= (1 - mortality_rate)
-        
+
         return life_expectancy
 
 
-def get_mortality_projector(wealth_level: Optional[str] = "average") -> MortalityProjector:
+def get_mortality_projector(wealth_level: str | None = "average") -> MortalityProjector:
     """Get a mortality projector configured for wealth level.
     
     Args:
@@ -273,9 +273,9 @@ def get_mortality_projector(wealth_level: Optional[str] = "average") -> Mortalit
         "average": 1.0,
         "high": 0.7
     }
-    
+
     params = MortalityProjectionParams(
         socioeconomic_multiplier=wealth_multipliers.get(wealth_level, 1.0)
     )
-    
+
     return MortalityProjector(params)

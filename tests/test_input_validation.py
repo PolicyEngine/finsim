@@ -1,6 +1,7 @@
 """Tests for input validation in portfolio simulation."""
 
 import pytest
+
 from finsim.portfolio_simulation import validate_inputs
 
 
@@ -229,7 +230,7 @@ class TestInputValidation:
     def test_edge_case_values(self):
         """Test edge case values that should be valid."""
         params = self.get_valid_params()
-        
+
         # Test minimum valid values
         params['n_simulations'] = 1
         params['n_years'] = 1
@@ -240,10 +241,10 @@ class TestInputValidation:
         params['expected_return'] = -0.5
         params['return_volatility'] = 0
         params['dividend_yield'] = 0
-        
+
         # Should not raise any exception
         validate_inputs(**params)
-        
+
         # Test maximum valid values
         params['n_simulations'] = 100_000
         params['n_years'] = 100
@@ -253,6 +254,6 @@ class TestInputValidation:
         params['expected_return'] = 0.5
         params['return_volatility'] = 1.0
         params['dividend_yield'] = 0.2
-        
+
         # Should not raise any exception
         validate_inputs(**params)

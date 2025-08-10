@@ -8,12 +8,12 @@ Requirements (if you wanted to run this):
 - pip install pymc numpyro arviz
 """
 
-import numpy as np
-from typing import Optional, Dict, Tuple
 from dataclasses import dataclass
 
+import numpy as np
 
-@dataclass 
+
+@dataclass
 class BayesianMortalityModel:
     """A Bayesian approach to mortality modeling.
     
@@ -23,7 +23,7 @@ class BayesianMortalityModel:
     3. Natural uncertainty quantification
     4. Can incorporate external information
     """
-    
+
     def conceptual_model(self):
         """Show what a Bayesian Lee-Carter model would look like.
         
@@ -89,58 +89,58 @@ class BayesianMortalityModel:
         return trace
         """
         return model_spec
-    
+
     def advantages_over_frequentist(self):
         """Why you might want Bayesian mortality models."""
-        
+
         advantages = {
             "Uncertainty Quantification": """
                 Frequentist bootstrap: Resamples data, assumes model is correct
                 Bayesian: Full posterior, includes model uncertainty
             """,
-            
+
             "Small Data": """
                 Frequentist: Needs lots of data for stable estimates
                 Bayesian: Can work with less data using informative priors
             """,
-            
+
             "External Information": """
                 Frequentist: Can't easily incorporate expert opinion
                 Bayesian: Priors naturally include external knowledge
             """,
-            
+
             "Hierarchical Models": """
                 Frequentist: Complex to fit multi-level models
                 Bayesian: Natural framework for hierarchical structures
             """,
-            
+
             "Prediction": """
                 Frequentist: Confidence vs prediction intervals confusion
                 Bayesian: Posterior predictive distribution is natural
             """
         }
         return advantages
-    
+
     def why_stmomo_isnt_bayesian(self):
         """Reasons StMoMo uses frequentist methods."""
-        
+
         reasons = {
             "Speed": """
                 MLE + Bootstrap: Fast, seconds to fit
                 Bayesian MCMC: Slow, minutes to hours
             """,
-            
+
             "Tradition": """
                 Actuarial science traditionally frequentist
                 Lee-Carter (1992) was frequentist
                 Industry expects these methods
             """,
-            
+
             "Simplicity": """
                 MLE: Standard optimization
                 Bayesian: Requires choosing priors, checking convergence
             """,
-            
+
             "Software": """
                 2015 (when StMoMo released): PyMC3 just emerging
                 Now (2024): PyMC, NumPyro, Stan make Bayesian easier
@@ -154,7 +154,7 @@ def modern_bayesian_mortality():
     
     Using NumPyro (JAX-based) for speed:
     """
-    
+
     code = """
     import numpyro
     import numpyro.distributions as dist
@@ -220,7 +220,7 @@ def modern_bayesian_mortality():
         future_exposure
     )
     """
-    
+
     return code
 
 
@@ -229,7 +229,7 @@ def simple_bayesian_life_expectancy():
     
     Instead of complex models, just be Bayesian about uncertainty:
     """
-    
+
     # Use conjugate priors for closed-form solutions
     class SimpleeBayesian:
         def __init__(self, prior_mean_le=20, prior_confidence=10):
@@ -242,50 +242,50 @@ def simple_bayesian_life_expectancy():
             # Beta distribution for survival probabilities
             self.alpha = prior_mean_le * prior_confidence
             self.beta = (85 - 65 - prior_mean_le) * prior_confidence
-            
+
         def update(self, observed_deaths, exposure):
             """Update beliefs with observed data."""
             # Conjugate update for Beta-Binomial
             self.alpha += (exposure - observed_deaths)
             self.beta += observed_deaths
-            
+
         def sample_life_expectancy(self, n_samples=1000):
             """Sample from posterior distribution."""
             # Sample survival probabilities
             annual_survival = np.random.beta(self.alpha, self.beta, n_samples)
-            
+
             # Convert to life expectancy (simplified)
             life_expectancy = -1 / np.log(annual_survival)
-            
+
             return life_expectancy
-        
+
         def credible_interval(self, level=0.95):
             """Get Bayesian credible interval."""
             samples = self.sample_life_expectancy(10000)
             lower = (1 - level) / 2
             upper = 1 - lower
             return np.percentile(samples, [lower * 100, upper * 100])
-    
+
     return SimpleeBayesian
 
 
 if __name__ == "__main__":
     model = BayesianMortalityModel()
-    
+
     print("=== Bayesian vs Frequentist Mortality Models ===\n")
-    
+
     print("StMoMo (Frequentist):")
     print("- Maximum likelihood estimation")
-    print("- Bootstrap for uncertainty")  
+    print("- Bootstrap for uncertainty")
     print("- ARIMA for projections")
     print("- Fast, traditional, industry standard")
-    
+
     print("\nBayesian Alternative:")
     print("- Prior distributions on parameters")
     print("- MCMC for posterior inference")
     print("- Natural uncertainty quantification")
     print("- Better for small data, worse for speed")
-    
+
     print("\n" + "="*50)
     print("For FinSim: Frequentist is fine!")
     print("- We have lots of mortality data")
