@@ -119,7 +119,7 @@ class AnnuityCalculator:
         cash_flows = [-premium]
 
         # Guaranteed period - 100% probability
-        for month in range(min(guarantee_months, expected_months)):
+        for _ in range(min(guarantee_months, expected_months)):
             cash_flows.append(monthly_payment)
 
         # Post-guarantee period - declining probability

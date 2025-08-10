@@ -88,7 +88,7 @@ class MonteCarloSimulator:
             lookback_years: Years of history to use
         """
         if not HAS_YFINANCE:
-            warnings.warn("yfinance not installed. Using default parameters.")
+            warnings.warn("yfinance not installed. Using default parameters.", stacklevel=2)
             return
 
         try:
@@ -108,7 +108,7 @@ class MonteCarloSimulator:
                     self.garch_model = model.fit(disp="off")
 
         except Exception as e:
-            warnings.warn(f"Historical fitting failed: {e}. Using defaults.")
+            warnings.warn(f"Historical fitting failed: {e}. Using defaults.", stacklevel=2)
 
     def simulate(
         self,

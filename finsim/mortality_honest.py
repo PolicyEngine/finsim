@@ -13,7 +13,7 @@ def what_stmomo_does():
     3. Find parameters that maximize likelihood
     4. Done - no external information used
 
-    Strengths: 
+    Strengths:
     - Lets the data speak for itself
     - No subjective choices
 
@@ -47,7 +47,7 @@ def truly_bayesian():
     # Prior (SSA tables converted to distribution)
     log_mortality ~ Normal(log(ssa_rate), uncertainty)
 
-    # Likelihood model for personal factors  
+    # Likelihood model for personal factors
     if smoker:
         log_mortality += Normal(0.6, 0.1)  # ~80% higher, ±10%
 

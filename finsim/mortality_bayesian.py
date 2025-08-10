@@ -41,7 +41,7 @@ class BayesianMortalityModel:
 
             # Age effect - smooth across ages
             α_x = pm.GaussianRandomWalk(
-                'alpha', 
+                'alpha',
                 sigma=0.01,  # Smooth changes between ages
                 shape=n_ages
             )
@@ -58,7 +58,7 @@ class BayesianMortalityModel:
             κ_t = pm.GaussianRandomWalk(
                 'kappa',
                 sigma=0.1,  # Year-to-year variation
-                shape=n_years  
+                shape=n_years
             )
 
             # Observation noise
@@ -169,7 +169,7 @@ def modern_bayesian_mortality():
             # Log base mortality by age
             log_a = numpyro.sample("log_a", dist.Normal(-5, 2))
 
-            # Mortality improvement sensitivity  
+            # Mortality improvement sensitivity
             b = numpyro.sample("b", dist.HalfNormal(0.02))
 
         # Mortality improvement trend (with drift)
@@ -209,7 +209,7 @@ def modern_bayesian_mortality():
     future_deaths = predictive(
         jax.random.PRNGKey(1),
         future_ages,
-        future_years, 
+        future_years,
         future_exposure
     )
     """
