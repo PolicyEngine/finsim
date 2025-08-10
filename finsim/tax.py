@@ -243,15 +243,15 @@ class TaxCalculator:
 
             # Calculate all tax components
             results = {
-                "federal_income_tax": sim.calculate("income_tax", self.year).values,
-                "state_income_tax": sim.calculate("state_income_tax", self.year).values,
+                "federal_income_tax": sim.calculate("income_tax", self.year),
+                "state_income_tax": sim.calculate("state_income_tax", self.year),
                 "taxable_social_security": sim.calculate(
                     "taxable_social_security", self.year
-                ).values,
-                "adjusted_gross_income": sim.calculate("adjusted_gross_income", self.year).values,
-                "taxable_income": sim.calculate("taxable_income", self.year).values,
-                "standard_deduction": sim.calculate("standard_deduction", self.year).values,
-                "household_net_income": sim.calculate("household_net_income", self.year).values,
+                ),
+                "adjusted_gross_income": sim.calculate("adjusted_gross_income", self.year),
+                "taxable_income": sim.calculate("taxable_income", self.year),
+                "standard_deduction": sim.calculate("standard_deduction", self.year),
+                "household_net_income": sim.calculate("household_net_income", self.year),
             }
 
             results["total_tax"] = results["federal_income_tax"] + results["state_income_tax"]
