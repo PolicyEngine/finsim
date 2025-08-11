@@ -551,8 +551,9 @@ def simulate_portfolio(
             current_consumption + prior_year_tax_liability[active] - total_income_available[active],
         )
 
-        # This is our actual gross withdrawal (no tax gross-up needed!)
-        actual_gross_withdrawal = withdrawal_need
+        # This is our actual gross withdrawal (capped at available portfolio)
+        # Can't withdraw more than what's available!
+        actual_gross_withdrawal = np.minimum(withdrawal_need, current_portfolio)
         gross_withdrawals[:, year - 1] = actual_gross_withdrawal
 
         # Calculate realized capital gains for tax purposes
