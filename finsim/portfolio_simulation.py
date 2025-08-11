@@ -622,7 +622,7 @@ def simulate_portfolio(
     # Calculate success: must be alive at end with money
     # Death with money is NOT success (it's a different outcome)
     success_mask = alive_mask[:, -1] & (portfolio_paths[:, -1] > 0)
-    
+
     return {
         "portfolio_paths": portfolio_paths,
         "failure_year": failure_year,

@@ -94,7 +94,7 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
         else:
             # Calculate cumulative factor from base year
             cola_factors[year_idx] = uprating / base_uprating
-        
+
         prev_uprating = uprating  # Store for next iteration
 
     return cola_factors

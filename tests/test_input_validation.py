@@ -173,7 +173,7 @@ class TestInputValidation:
         params["annuity_type"] = "Unknown Type"
         with pytest.raises(ValueError, match="Invalid annuity_type"):
             validate_inputs(**params)
-    
+
     def test_none_annuity_type_without_annuity(self):
         """Test that annuity_type=None is allowed when has_annuity=False."""
         params = self.get_valid_params()
@@ -181,7 +181,7 @@ class TestInputValidation:
         params["annuity_type"] = None
         # Should not raise any exception
         validate_inputs(**params)
-    
+
     def test_invalid_annuity_type_without_annuity(self):
         """Test that invalid annuity_type is ignored when has_annuity=False."""
         params = self.get_valid_params()
