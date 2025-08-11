@@ -70,8 +70,8 @@ def test_cola_vs_cpi_inflation():
     cpi_annual_rates = []
 
     for i in range(1, 30):
-        cola_rate = (cola[i] / cola[i-1] - 1) * 100
-        cpi_rate = (cpi[i] / cpi[i-1] - 1) * 100
+        cola_rate = (cola[i] / cola[i - 1] - 1) * 100
+        cpi_rate = (cpi[i] / cpi[i - 1] - 1) * 100
         cola_annual_rates.append(cola_rate)
         cpi_annual_rates.append(cpi_rate)
 
