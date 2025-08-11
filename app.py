@@ -850,7 +850,12 @@ with tab2:
             cost_basis = simulation_results['cost_basis']
             
             # Calculate statistics
-            success_mask = failure_year > n_years
+            # Use the correct success mask from simulation (alive at end with money)
+            if "success_mask" in simulation_results:
+                success_mask = simulation_results["success_mask"]
+            else:
+                # Fallback for backward compatibility
+                success_mask = failure_year > n_years
             success_rate = success_mask.mean()
             
             # Percentiles over time (5th, 50th, 95th for 90% CI)

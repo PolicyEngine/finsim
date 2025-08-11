@@ -58,6 +58,7 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
 
     # Use hardcoded values first, then try PolicyEngine-US for extended years
     base_uprating = None
+    prev_uprating = None  # Track previous uprating value for extrapolation
 
     for year_idx in range(n_years):
         current_year = start_year + year_idx
@@ -80,13 +81,11 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
                 uprating = parameters.gov.ssa.uprating(period)
             except Exception:
                 # For years beyond available data, use 2.2% annual growth (long-term avg)
-                if year_idx > 0:
-                    prev_year = start_year + year_idx - 1
-                    if prev_year in SSA_UPRATING:
-                        uprating = SSA_UPRATING[prev_year] * 1.022
-                    else:
-                        uprating = cola_factors[year_idx - 1] * 1.022
+                if prev_uprating is not None:
+                    # Use previous uprating value * 1.022 for 2.2% growth
+                    uprating = prev_uprating * 1.022
                 else:
+                    # Fallback: use last known value with growth
                     uprating = SSA_UPRATING.get(2035, 387.598) * ((current_year - 2035) * 0.022 + 1)
 
         if base_uprating is None:
@@ -95,6 +94,8 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
         else:
             # Calculate cumulative factor from base year
             cola_factors[year_idx] = uprating / base_uprating
+        
+        prev_uprating = uprating  # Store for next iteration
 
     return cola_factors
 

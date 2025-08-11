@@ -619,6 +619,10 @@ def simulate_portfolio(
             if death_year > 0:
                 estate_at_death[i] = portfolio_paths[i, death_year - 1]
 
+    # Calculate success: must be alive at end with money
+    # Death with money is NOT success (it's a different outcome)
+    success_mask = alive_mask[:, -1] & (portfolio_paths[:, -1] > 0)
+    
     return {
         "portfolio_paths": portfolio_paths,
         "failure_year": failure_year,
@@ -632,4 +636,5 @@ def simulate_portfolio(
         "taxes_paid": taxes_paid,
         "net_withdrawals": net_withdrawals,
         "cost_basis": cost_basis,
+        "success_mask": success_mask,  # New field for correct success counting
     }

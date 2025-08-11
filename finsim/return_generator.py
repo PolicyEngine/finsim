@@ -26,6 +26,8 @@ class ReturnGenerator:
         self.volatility = volatility
         self.seed = seed
 
+        # Only set seed if explicitly provided
+        # Don't call np.random.seed(None) as it doesn't reset properly
         if seed is not None:
             np.random.seed(seed)
 
