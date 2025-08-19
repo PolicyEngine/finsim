@@ -1,0 +1,15 @@
+{
+  "name": "finsim-web",
+  "version": "1.0.0",
+  "description": "A modern web application for personal injury settlement analysis, built with React and Flask, using the PolicyEngine design system.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
