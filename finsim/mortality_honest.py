@@ -95,7 +95,11 @@ def the_spectrum():
     print("=" * 60)
 
     approaches = [
-        ("StMoMo", "Pure Frequentist", "Only uses death/exposure data, no external info"),
+        (
+            "StMoMo",
+            "Pure Frequentist",
+            "Only uses death/exposure data, no external info",
+        ),
         (
             "Our mortality_projection.py",
             "Informal Bayesian",

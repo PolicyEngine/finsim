@@ -35,7 +35,9 @@ class MonteCarloDataset(Dataset):
         self.year = year
         self.filing_status = filing_status
         self.dividend_income = (
-            dividend_income_array if dividend_income_array is not None else np.zeros(n_scenarios)
+            dividend_income_array
+            if dividend_income_array is not None
+            else np.zeros(n_scenarios)
         )
         self.employment_income = (
             employment_income_array
@@ -245,16 +247,26 @@ class TaxCalculator:
             results = {
                 "federal_income_tax": sim.calculate("income_tax", self.year),
                 "state_income_tax": sim.calculate("state_income_tax", self.year),
-                "taxable_social_security": sim.calculate("taxable_social_security", self.year),
-                "adjusted_gross_income": sim.calculate("adjusted_gross_income", self.year),
+                "taxable_social_security": sim.calculate(
+                    "taxable_social_security", self.year
+                ),
+                "adjusted_gross_income": sim.calculate(
+                    "adjusted_gross_income", self.year
+                ),
                 "taxable_income": sim.calculate("taxable_income", self.year),
                 "standard_deduction": sim.calculate("standard_deduction", self.year),
-                "household_net_income": sim.calculate("household_net_income", self.year),
+                "household_net_income": sim.calculate(
+                    "household_net_income", self.year
+                ),
             }
 
-            results["total_tax"] = results["federal_income_tax"] + results["state_income_tax"]
+            results["total_tax"] = (
+                results["federal_income_tax"] + results["state_income_tax"]
+            )
 
-            total_income = capital_gains_array + social_security_array + dividend_income_array
+            total_income = (
+                capital_gains_array + social_security_array + dividend_income_array
+            )
             results["effective_tax_rate"] = np.where(
                 total_income > 0, results["total_tax"] / total_income, 0
             )

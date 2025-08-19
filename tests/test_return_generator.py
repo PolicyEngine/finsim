@@ -14,7 +14,10 @@ class TestReturnGenerator:
         gen = ReturnGenerator(expected_return=0.07, volatility=0.15)
         returns = gen.generate_returns(n_simulations=100, n_years=30)
 
-        assert returns.shape == (100, 30), f"Expected shape (100, 30), got {returns.shape}"
+        assert returns.shape == (
+            100,
+            30,
+        ), f"Expected shape (100, 30), got {returns.shape}"
 
     def test_no_repeated_values(self):
         """Test that simulations don't get stuck with repeated values."""
@@ -106,7 +109,9 @@ class TestReturnGenerator:
             year_returns = returns[:, year]
             next_year_returns = returns[:, year + 1]
             corr = np.corrcoef(year_returns, next_year_returns)[0, 1]
-            assert abs(corr) < 0.1, f"Years {year} and {year+1} have correlation {corr:.3f}"
+            assert (
+                abs(corr) < 0.1
+            ), f"Years {year} and {year+1} have correlation {corr:.3f}"
 
     def test_reproducibility_with_seed(self):
         """Test that setting seed gives reproducible results."""
@@ -126,7 +131,9 @@ class TestReturnGenerator:
         gen2 = ReturnGenerator(expected_return=0.07, volatility=0.15, seed=43)
         returns2 = gen2.generate_returns(n_simulations=10, n_years=5)
 
-        assert not np.allclose(returns1, returns2), "Different seeds should give different results"
+        assert not np.allclose(
+            returns1, returns2
+        ), "Different seeds should give different results"
 
     def test_fat_tails_present(self):
         """Test that distribution has some fat tails (kurtosis > 3)."""

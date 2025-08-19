@@ -80,11 +80,15 @@ def test_cola_vs_cpi_inflation():
 
     # SSA COLA (CPI-W based) is typically higher than C-CPI-U
     # C-CPI-U accounts for substitution effects
-    assert avg_cola > avg_cpi, f"COLA ({avg_cola:.2f}%) should be > C-CPI-U ({avg_cpi:.2f}%)"
+    assert (
+        avg_cola > avg_cpi
+    ), f"COLA ({avg_cola:.2f}%) should be > C-CPI-U ({avg_cpi:.2f}%)"
 
     # The difference should be meaningful (typically 0.2-0.3% per year)
     difference = avg_cola - avg_cpi
-    assert 0.1 < difference < 0.5, f"COLA-CPI difference ({difference:.2f}%) seems wrong"
+    assert (
+        0.1 < difference < 0.5
+    ), f"COLA-CPI difference ({difference:.2f}%) seems wrong"
 
 
 def test_simulation_consistency():
@@ -150,7 +154,9 @@ def test_variation_across_seeds():
     for seed in range(5):
         np.random.seed(seed)
         results = simulate_portfolio(**params)
-        success_rate = 100 * np.sum(results["failure_year"] > 30) / params["n_simulations"]
+        success_rate = (
+            100 * np.sum(results["failure_year"] > 30) / params["n_simulations"]
+        )
         success_rates.append(success_rate)
         print(f"Seed {seed}: {success_rate:.1f}%")
 

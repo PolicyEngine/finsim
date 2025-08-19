@@ -317,7 +317,10 @@ class MortalityProjector:
             else:
                 # Linear interpolation
                 weight = (current_age - lower_age) / (upper_age - lower_age)
-                base_rate = base_rates[lower_age] * (1 - weight) + base_rates[upper_age] * weight
+                base_rate = (
+                    base_rates[lower_age] * (1 - weight)
+                    + base_rates[upper_age] * weight
+                )
         else:
             base_rate = base_rates[current_age]
 
@@ -329,14 +332,18 @@ class MortalityProjector:
             improvement_factor = self.params.mortality_improvement_rate
         else:
             # Linear taper from max_improvement_age to 120
-            age_factor = max(0, (120 - current_age) / (120 - self.params.max_improvement_age))
+            age_factor = max(
+                0, (120 - current_age) / (120 - self.params.max_improvement_age)
+            )
             improvement_factor = self.params.mortality_improvement_rate * age_factor
 
         # Apply compound improvement
         improvement_multiplier = (1 - improvement_factor) ** years_of_improvement
 
         # Apply socioeconomic adjustment
-        adjusted_rate = base_rate * improvement_multiplier * self.params.socioeconomic_multiplier
+        adjusted_rate = (
+            base_rate * improvement_multiplier * self.params.socioeconomic_multiplier
+        )
 
         # Ensure rate is in valid range
         return np.clip(adjusted_rate, 0.0, 1.0)
@@ -368,7 +375,9 @@ class MortalityProjector:
             projection_year = start_year + year
 
             # Get projected mortality rate
-            mortality_rate = self.get_projected_mortality_rate(age, gender, projection_year)
+            mortality_rate = self.get_projected_mortality_rate(
+                age, gender, projection_year
+            )
 
             # Simulate deaths
             random_draws = np.random.random(n_simulations)
@@ -404,7 +413,9 @@ class MortalityProjector:
             projection_year = start_year + year
 
             # Get mortality rate for this year
-            mortality_rate = self.get_projected_mortality_rate(age, gender, projection_year)
+            mortality_rate = self.get_projected_mortality_rate(
+                age, gender, projection_year
+            )
 
             # Add fractional year survived
             life_expectancy += survival_prob * (1 - mortality_rate / 2)

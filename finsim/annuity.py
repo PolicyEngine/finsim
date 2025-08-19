@@ -95,7 +95,9 @@ class AnnuityCalculator:
                     return -1.0
         else:
             # Life contingent annuity - use survival probabilities
-            return self._calculate_life_contingent_irr(premium, monthly_payment, guarantee_months)
+            return self._calculate_life_contingent_irr(
+                premium, monthly_payment, guarantee_months
+            )
 
     def _calculate_life_contingent_irr(
         self, premium: float, monthly_payment: float, guarantee_months: int
@@ -170,7 +172,9 @@ class AnnuityCalculator:
                 life_contingent=proposal.get("life_contingent", False),
             )
 
-            total_guaranteed = proposal["monthly_payment"] * proposal.get("guarantee_months", 0)
+            total_guaranteed = proposal["monthly_payment"] * proposal.get(
+                "guarantee_months", 0
+            )
 
             results.append(
                 {

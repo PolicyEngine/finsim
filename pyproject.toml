@@ -33,8 +33,12 @@ dependencies = [
     "pandas>=2.0.0",
     "scipy>=1.10.0",
     "policyengine-us>=1.0.0",
-    "policyengine-core>=3.0.0",  # Explicitly require newer version
-    "pyvis>=0.3.2",  # Required by policyengine-core
+    "policyengine-core>=3.0.0", # Explicitly require newer version
+    "pyvis>=0.3.2", # Required by policyengine-core
+    "matplotlib>=3.10.5",
+    "seaborn>=0.13.2",
+    "jupyter>=1.1.1",
+    "nbconvert>=7.16.6",
 ]
 
 [project.optional-dependencies]
