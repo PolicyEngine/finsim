@@ -36,7 +36,9 @@ class TestMortalityProjection:
         for age in ages:
             male_rate = projector.get_projected_mortality_rate(age, "Male", 2024)
             female_rate = projector.get_projected_mortality_rate(age, "Female", 2024)
-            assert female_rate <= male_rate, f"Female should have lower mortality at age {age}"
+            assert (
+                female_rate <= male_rate
+            ), f"Female should have lower mortality at age {age}"
 
     def test_mortality_improvements(self):
         """Test that future mortality is lower due to improvements."""
@@ -55,7 +57,9 @@ class TestMortalityProjection:
 
     def test_improvement_tapering(self):
         """Test that mortality improvements taper off at old ages."""
-        params = MortalityProjectionParams(mortality_improvement_rate=0.02, max_improvement_age=85)
+        params = MortalityProjectionParams(
+            mortality_improvement_rate=0.02, max_improvement_age=85
+        )
         projector = MortalityProjector(params)
 
         # Young age should get full improvement

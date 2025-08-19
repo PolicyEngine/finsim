@@ -174,7 +174,9 @@ class RetirementSimulation:
                 continue
 
             # Calculate annuity income
-            annuity_income[year] = self._calculate_annuity_income(year, alive_mask[year])
+            annuity_income[year] = self._calculate_annuity_income(
+                year, alive_mask[year]
+            )
 
             # Investment returns (GBM) - PRICE appreciation only
             price_returns = np.random.normal(
@@ -190,7 +192,9 @@ class RetirementSimulation:
 
             # Calculate withdrawal needed
             # Dividends are cash we receive, reducing withdrawal needs
-            guaranteed = self.config.social_security + self.config.pension + annuity_income[year]
+            guaranteed = (
+                self.config.social_security + self.config.pension + annuity_income[year]
+            )
             net_need = max(0, self.config.annual_consumption - guaranteed - dividends)
             gross_withdrawal = net_need / (1 - self.config.effective_tax_rate / 100)
             withdrawals[year] = gross_withdrawal

@@ -39,7 +39,9 @@ class MarketDataFetcher:
     TICKER_BND = "BND"  # Vanguard Total Bond Market ETF
     TICKER_GLD = "GLD"  # SPDR Gold Shares
 
-    def __init__(self, cache_dir: str | None = None, cache_expiry: timedelta = timedelta(days=1)):
+    def __init__(
+        self, cache_dir: str | None = None, cache_expiry: timedelta = timedelta(days=1)
+    ):
         """Initialize the market data fetcher.
 
         Args:
@@ -81,7 +83,9 @@ class MarketDataFetcher:
         except Exception as e:
             raise ValueError(f"Failed to fetch data for {ticker}: {e}") from e
 
-    def _fetch_from_yfinance(self, ticker: str, years: int, inflation_rate: float) -> FundData:
+    def _fetch_from_yfinance(
+        self, ticker: str, years: int, inflation_rate: float
+    ) -> FundData:
         """Fetch data from yfinance.
 
         Args:

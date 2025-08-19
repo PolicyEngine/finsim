@@ -86,7 +86,9 @@ def get_ssa_cola_factors(start_year: int, n_years: int) -> np.ndarray:
                     uprating = prev_uprating * 1.022
                 else:
                     # Fallback: use last known value with growth
-                    uprating = SSA_UPRATING.get(2035, 387.598) * ((current_year - 2035) * 0.022 + 1)
+                    uprating = SSA_UPRATING.get(2035, 387.598) * (
+                        (current_year - 2035) * 0.022 + 1
+                    )
 
         if base_uprating is None:
             base_uprating = uprating
@@ -171,7 +173,9 @@ if __name__ == "__main__":
             if i == 0:
                 print(f"  {year}: {inflation_factors[i]:.3f} (base year)")
             else:
-                annual_rate = (inflation_factors[i] / inflation_factors[i - 1] - 1) * 100
+                annual_rate = (
+                    inflation_factors[i] / inflation_factors[i - 1] - 1
+                ) * 100
                 cumulative = (inflation_factors[i] - 1) * 100
                 print(
                     f"  {year}: {inflation_factors[i]:.3f} "

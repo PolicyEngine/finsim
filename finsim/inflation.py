@@ -78,7 +78,9 @@ def get_inflation_factors(
     return inflation_factors
 
 
-def inflate_value(base_value: float, year_index: int, inflation_factors: np.ndarray) -> float:
+def inflate_value(
+    base_value: float, year_index: int, inflation_factors: np.ndarray
+) -> float:
     """Inflate a base value to a specific year.
 
     Args:

@@ -52,7 +52,9 @@ def validate_inputs(
     if n_simulations <= 0:
         raise ValueError(f"n_simulations must be positive, got {n_simulations}")
     if n_simulations > 100000:
-        raise ValueError(f"n_simulations too large ({n_simulations}), maximum is 100,000")
+        raise ValueError(
+            f"n_simulations too large ({n_simulations}), maximum is 100,000"
+        )
 
     if n_years <= 0:
         raise ValueError(f"n_years must be positive, got {n_years}")
@@ -60,7 +62,9 @@ def validate_inputs(
         raise ValueError(f"n_years too large ({n_years}), maximum is 100")
 
     if initial_portfolio < 0:
-        raise ValueError(f"initial_portfolio cannot be negative, got {initial_portfolio}")
+        raise ValueError(
+            f"initial_portfolio cannot be negative, got {initial_portfolio}"
+        )
     if initial_portfolio > 1e10:
         raise ValueError(
             f"initial_portfolio too large ({initial_portfolio:.0f}), maximum is $10 billion"
@@ -90,10 +94,14 @@ def validate_inputs(
     if pension < 0:
         raise ValueError(f"pension cannot be negative, got {pension}")
     if pension > 1000000:
-        raise ValueError(f"pension seems unrealistic ({pension}), maximum expected is $1,000,000")
+        raise ValueError(
+            f"pension seems unrealistic ({pension}), maximum expected is $1,000,000"
+        )
 
     if employment_income < 0:
-        raise ValueError(f"employment_income cannot be negative, got {employment_income}")
+        raise ValueError(
+            f"employment_income cannot be negative, got {employment_income}"
+        )
     if employment_income > 10000000:
         raise ValueError(
             f"employment_income seems unrealistic ({employment_income}), maximum expected is $10,000,000"
@@ -118,7 +126,9 @@ def validate_inputs(
 
     # Validate consumption
     if annual_consumption < 0:
-        raise ValueError(f"annual_consumption cannot be negative, got {annual_consumption}")
+        raise ValueError(
+            f"annual_consumption cannot be negative, got {annual_consumption}"
+        )
     if annual_consumption > 10000000:
         raise ValueError(
             f"annual_consumption seems unrealistic ({annual_consumption}), maximum expected is $10,000,000"
@@ -126,14 +136,22 @@ def validate_inputs(
 
     # Validate market parameters
     if expected_return < -0.5:
-        raise ValueError(f"expected_return too low ({expected_return}), minimum is -50%")
+        raise ValueError(
+            f"expected_return too low ({expected_return}), minimum is -50%"
+        )
     if expected_return > 0.5:
-        raise ValueError(f"expected_return too high ({expected_return}), maximum is 50%")
+        raise ValueError(
+            f"expected_return too high ({expected_return}), maximum is 50%"
+        )
 
     if return_volatility < 0:
-        raise ValueError(f"return_volatility cannot be negative, got {return_volatility}")
+        raise ValueError(
+            f"return_volatility cannot be negative, got {return_volatility}"
+        )
     if return_volatility > 1.0:
-        raise ValueError(f"return_volatility too high ({return_volatility}), maximum is 100%")
+        raise ValueError(
+            f"return_volatility too high ({return_volatility}), maximum is 100%"
+        )
 
     if dividend_yield < 0:
         raise ValueError(f"dividend_yield cannot be negative, got {dividend_yield}")
@@ -195,7 +213,9 @@ def validate_inputs(
         "DC",
     ]
     if state not in VALID_STATES:
-        raise ValueError(f"Invalid state '{state}'. Must be one of: {', '.join(VALID_STATES)}")
+        raise ValueError(
+            f"Invalid state '{state}'. Must be one of: {', '.join(VALID_STATES)}"
+        )
 
     # Validate gender
     VALID_GENDERS = ["Male", "Female"]
@@ -204,7 +224,11 @@ def validate_inputs(
 
     # Validate annuity type only if has_annuity is True
     if has_annuity:
-        VALID_ANNUITY_TYPES = ["Life Only", "Life Contingent with Guarantee", "Fixed Period"]
+        VALID_ANNUITY_TYPES = [
+            "Life Only",
+            "Life Contingent with Guarantee",
+            "Fixed Period",
+        ]
         if annuity_type not in VALID_ANNUITY_TYPES:
             raise ValueError(
                 f"Invalid annuity_type '{annuity_type}'. Must be one of: {', '.join(VALID_ANNUITY_TYPES)}"
@@ -222,7 +246,9 @@ def validate_inputs(
         if spouse_gender is None:
             raise ValueError("spouse_gender is required when has_spouse=True")
         if spouse_gender not in VALID_GENDERS:
-            raise ValueError(f"Invalid spouse_gender '{spouse_gender}'. Must be 'Male' or 'Female'")
+            raise ValueError(
+                f"Invalid spouse_gender '{spouse_gender}'. Must be 'Male' or 'Female'"
+            )
 
         if spouse_social_security is not None:
             if spouse_social_security < 0:
@@ -236,7 +262,9 @@ def validate_inputs(
 
         if spouse_pension is not None:
             if spouse_pension < 0:
-                raise ValueError(f"spouse_pension cannot be negative, got {spouse_pension}")
+                raise ValueError(
+                    f"spouse_pension cannot be negative, got {spouse_pension}"
+                )
             if spouse_pension > 1000000:
                 raise ValueError(f"spouse_pension seems unrealistic ({spouse_pension})")
 
@@ -408,7 +436,9 @@ def simulate_portfolio(
         # Use basic SSA tables (local fallback)
         mortality_rates = get_mortality_rates(gender) if include_mortality else {}
         spouse_mortality_rates = (
-            get_mortality_rates(spouse_gender) if (include_mortality and has_spouse) else {}
+            get_mortality_rates(spouse_gender)
+            if (include_mortality and has_spouse)
+            else {}
         )
 
     # Generate all returns upfront using the return generator
@@ -435,7 +465,9 @@ def simulate_portfolio(
 
     failure_year = np.full(n_simulations, n_years + 1)
     alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool)
-    spouse_alive_mask = np.ones((n_simulations, n_years + 1), dtype=bool) if has_spouse else None
+    spouse_alive_mask = (
+        np.ones((n_simulations, n_years + 1), dtype=bool) if has_spouse else None
+    )
 
     # Track annuity income
     annuity_income = np.zeros((n_simulations, n_years))
@@ -457,7 +489,9 @@ def simulate_portfolio(
                 gets_annuity = year <= annuity_guarantee_years
                 annuity_income[:, year - 1] = annuity_annual if gets_annuity else 0
             elif annuity_type == "Life Only":
-                annuity_income[:, year - 1] = np.where(alive_mask[:, year - 1], annuity_annual, 0)
+                annuity_income[:, year - 1] = np.where(
+                    alive_mask[:, year - 1], annuity_annual, 0
+                )
             else:  # Life Contingent with Guarantee
                 in_guarantee = year <= annuity_guarantee_years
                 annuity_income[:, year - 1] = np.where(
@@ -474,7 +508,9 @@ def simulate_portfolio(
             if has_spouse:
                 spouse_current_age = spouse_age + year
                 spouse_mort_rate = spouse_mortality_rates.get(spouse_current_age, 0)
-                spouse_death_this_year = np.random.random(n_simulations) < spouse_mort_rate
+                spouse_death_this_year = (
+                    np.random.random(n_simulations) < spouse_mort_rate
+                )
                 spouse_alive_mask[spouse_death_this_year, year:] = False
 
         # Only simulate for those still alive and not failed
@@ -492,7 +528,9 @@ def simulate_portfolio(
         )
 
         # Dividends (only for living people's portfolios)
-        dividends = np.where(alive_mask[:, year], current_portfolio * (dividend_yield / 100), 0)
+        dividends = np.where(
+            alive_mask[:, year], current_portfolio * (dividend_yield / 100), 0
+        )
         dividend_income[:, year - 1] = dividends
 
         # Calculate withdrawal needed for consumption AND last year's taxes
@@ -518,9 +556,13 @@ def simulate_portfolio(
             if spouse_current_age <= spouse_retirement_age:
                 years_of_growth = year - 1  # Years since start
                 # spouse_employment_growth_rate is already in percentage form (e.g., 5.0 for 5%)
-                growth_factor = (1 + spouse_employment_growth_rate / 100) ** years_of_growth
+                growth_factor = (
+                    1 + spouse_employment_growth_rate / 100
+                ) ** years_of_growth
                 grown_spouse_income = spouse_employment_income * growth_factor
-                spouse_wages = np.where(spouse_alive_mask[:, year], grown_spouse_income, 0)
+                spouse_wages = np.where(
+                    spouse_alive_mask[:, year], grown_spouse_income, 0
+                )
             # Spouse SS and pension (only if alive)
             spouse_ss = np.where(spouse_alive_mask[:, year], spouse_social_security, 0)
             spouse_pens = np.where(spouse_alive_mask[:, year], spouse_pension, 0)
@@ -535,9 +577,13 @@ def simulate_portfolio(
 
         # Total household income
         total_employment = wages + spouse_wages
-        total_ss_pension = current_social_security + pension + current_spouse_ss + spouse_pens
+        total_ss_pension = (
+            current_social_security + pension + current_spouse_ss + spouse_pens
+        )
 
-        guaranteed_income = total_ss_pension + annuity_income[:, year - 1] + total_employment
+        guaranteed_income = (
+            total_ss_pension + annuity_income[:, year - 1] + total_employment
+        )
         total_income_available = guaranteed_income + dividends
 
         # Calculate inflation-adjusted consumption using actual C-CPI-U projections
@@ -548,7 +594,9 @@ def simulate_portfolio(
         withdrawal_need = np.zeros(n_simulations)
         withdrawal_need[active] = np.maximum(
             0,
-            current_consumption + prior_year_tax_liability[active] - total_income_available[active],
+            current_consumption
+            + prior_year_tax_liability[active]
+            - total_income_available[active],
         )
 
         # This is our actual gross withdrawal (capped at available portfolio)

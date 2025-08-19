@@ -88,7 +88,9 @@ class MonteCarloSimulator:
             lookback_years: Years of history to use
         """
         if not HAS_YFINANCE:
-            warnings.warn("yfinance not installed. Using default parameters.", stacklevel=2)
+            warnings.warn(
+                "yfinance not installed. Using default parameters.", stacklevel=2
+            )
             return
 
         try:
@@ -108,7 +110,9 @@ class MonteCarloSimulator:
                     self.garch_model = model.fit(disp="off")
 
         except Exception as e:
-            warnings.warn(f"Historical fitting failed: {e}. Using defaults.", stacklevel=2)
+            warnings.warn(
+                f"Historical fitting failed: {e}. Using defaults.", stacklevel=2
+            )
 
     def simulate(
         self,
@@ -156,11 +160,15 @@ class MonteCarloSimulator:
             # Current year parameters
             current_age = self.age + year
             current_ss = self.social_security_annual * (1 + cola_rate) ** year
-            taxable_fraction = min(0.8, initial_taxable_fraction + taxable_fraction_increase * year)
+            taxable_fraction = min(
+                0.8, initial_taxable_fraction + taxable_fraction_increase * year
+            )
 
             # Find gross withdrawal needed for target after-tax income
             # Start with estimate
-            gross_annual_withdrawal = self.target_after_tax_annual / (1 - 0.15 * taxable_fraction)
+            gross_annual_withdrawal = self.target_after_tax_annual / (
+                1 - 0.15 * taxable_fraction
+            )
 
             # Iterate to find correct gross amount
             for _ in range(5):  # Usually converges in 2-3 iterations
@@ -198,7 +206,9 @@ class MonteCarloSimulator:
                 # Portfolio dynamics
                 dividends = current_value * monthly_dividend_yield
                 growth = current_value * returns[:, month]
-                new_value = current_value + growth + dividends - monthly_gross_withdrawal
+                new_value = (
+                    current_value + growth + dividends - monthly_gross_withdrawal
+                )
 
                 # Track depletion
                 depleted = (current_value > 0) & (new_value <= 0)
@@ -252,7 +262,9 @@ class MonteCarloSimulator:
 
                 for t in range(n_months):
                     if t > 0:
-                        h[t] = omega + alpha * (returns[sim, t - 1] ** 2) + beta * h[t - 1]
+                        h[t] = (
+                            omega + alpha * (returns[sim, t - 1] ** 2) + beta * h[t - 1]
+                        )
                     returns[sim, t] = np.sqrt(h[t]) * shocks[t]
 
             # Convert to monthly decimal returns
@@ -261,7 +273,9 @@ class MonteCarloSimulator:
             # Standard normal returns
             monthly_mean = self.annual_return_mean / 12
             monthly_std = self.annual_return_std / np.sqrt(12)
-            returns = np.random.normal(monthly_mean, monthly_std, (self.n_simulations, n_months))
+            returns = np.random.normal(
+                monthly_mean, monthly_std, (self.n_simulations, n_months)
+            )
 
         return returns
 
@@ -297,7 +311,9 @@ class MonteCarloSimulator:
             "annuity_total_guaranteed": annuity_total,
             "mc_median_total_after_tax": np.median(mc_total_after_tax),
             "mc_mean_total_after_tax": np.mean(mc_total_after_tax),
-            "probability_mc_exceeds_annuity": np.mean(mc_total_after_tax > annuity_total),
+            "probability_mc_exceeds_annuity": np.mean(
+                mc_total_after_tax > annuity_total
+            ),
             "mc_depletion_probability": simulation_results["depletion_probability"],
             "mc_median_final_value": simulation_results["median_final_value"],
         }

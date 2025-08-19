@@ -13,7 +13,10 @@ class ReturnGenerator:
     """Generate returns for Monte Carlo simulations."""
 
     def __init__(
-        self, expected_return: float = 0.07, volatility: float = 0.15, seed: int | None = None
+        self,
+        expected_return: float = 0.07,
+        volatility: float = 0.15,
+        seed: int | None = None,
     ):
         """Initialize the return generator.
 
@@ -71,7 +74,9 @@ class ReturnGenerator:
         z_matrix = np.clip(z_matrix, -4, 4)
 
         # Convert to log returns using GBM formula
-        log_returns = (self.expected_return - 0.5 * self.volatility**2) + self.volatility * z_matrix
+        log_returns = (
+            self.expected_return - 0.5 * self.volatility**2
+        ) + self.volatility * z_matrix
 
         # Convert to growth factors
         growth_factors = np.exp(log_returns)
@@ -82,7 +87,9 @@ class ReturnGenerator:
             unique_vals = np.unique(np.round(growth_factors[sim_idx, :], 8))
             if len(unique_vals) < n_years * 0.8:  # Allow for some chance duplicates
                 # This indicates a bug - regenerate this simulation
-                print(f"WARNING: Simulation {sim_idx} had repeated values, regenerating...")
+                print(
+                    f"WARNING: Simulation {sim_idx} had repeated values, regenerating..."
+                )
                 growth_factors[sim_idx, :] = self._regenerate_single_simulation(n_years)
 
         return growth_factors
@@ -94,7 +101,9 @@ class ReturnGenerator:
         """
         z = np.random.randn(n_years)
         z = np.clip(z, -4, 4)
-        log_returns = (self.expected_return - 0.5 * self.volatility**2) + self.volatility * z
+        log_returns = (
+            self.expected_return - 0.5 * self.volatility**2
+        ) + self.volatility * z
         return np.exp(log_returns)
 
     def generate_returns_with_correlation(

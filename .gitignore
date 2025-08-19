@@ -160,3 +160,24 @@ temp/
 
 # Streamlit
 .streamlit/
+
+# Web Application
+finsim-web/node_modules/
+finsim-web/frontend/node_modules/
+finsim-web/frontend/dist/
+finsim-web/frontend/build/
+finsim-web/frontend/.vite/
+finsim-web/frontend/coverage/
+finsim-web/backend/__pycache__/
+finsim-web/backend/*.pyc
+finsim-web/backend/.pytest_cache/
+finsim-web/backend/.coverage
+finsim-web/backend/htmlcov/
+finsim-web/**/*.log
+
+# Keep CSV files that are outputs
+settlement_analysis_results.csv
+settlement_confidence_summary.csv
+
+# Executed notebooks
+*_executed.ipynb

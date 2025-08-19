@@ -116,7 +116,9 @@ class TestPortfolioSimulation:
 
         # With high employment income, portfolios should grow initially
         # Check that portfolios generally increase in early years
-        early_growth = results["portfolio_paths"][:, 5] > results["portfolio_paths"][:, 0]
+        early_growth = (
+            results["portfolio_paths"][:, 5] > results["portfolio_paths"][:, 0]
+        )
         assert np.mean(early_growth) > 0.7  # Most should grow
 
     def test_dividend_income_calculation(self, basic_params):
@@ -129,7 +131,9 @@ class TestPortfolioSimulation:
 
         # Should be close (some variation due to mortality/failures)
         assert np.allclose(
-            first_year_dividends[first_year_dividends > 0], expected_first_dividend, rtol=0.01
+            first_year_dividends[first_year_dividends > 0],
+            expected_first_dividend,
+            rtol=0.01,
         )
 
     def test_tax_calculation(self, basic_params):
@@ -165,7 +169,9 @@ class TestPortfolioSimulation:
 
         if np.any(positive_withdrawals):
             # Net should be less than or equal to gross
-            assert np.all(year_2_net[positive_withdrawals] <= year_2_gross[positive_withdrawals])
+            assert np.all(
+                year_2_net[positive_withdrawals] <= year_2_gross[positive_withdrawals]
+            )
 
     def test_cost_basis_tracking(self, basic_params):
         """Test that cost basis is tracked correctly."""

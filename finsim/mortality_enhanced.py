@@ -82,7 +82,12 @@ class EnhancedMortality:
 
         # Health adjustment
         if self.health_status is not None:
-            health_effects = {"excellent": -0.35, "good": -0.16, "average": 0.0, "poor": 0.26}
+            health_effects = {
+                "excellent": -0.35,
+                "good": -0.16,
+                "average": 0.0,
+                "poor": 0.26,
+            }
             # Remove population average (assuming distribution)
             pop_avg = (
                 0.2 * health_effects["excellent"]
@@ -138,7 +143,9 @@ class EnhancedMortality:
                 break
 
             death_this_year = np.zeros(n_simulations, dtype=bool)
-            death_this_year[still_alive] = np.random.random(np.sum(still_alive)) < mort_rate
+            death_this_year[still_alive] = (
+                np.random.random(np.sum(still_alive)) < mort_rate
+            )
 
             # Update alive mask
             alive_mask[death_this_year, year:] = False
@@ -174,7 +181,11 @@ def compare_mortality_approaches():
 
     # Enhanced with good health, high income
     enhanced = EnhancedMortality(
-        gender="Male", use_bayesian=True, smoker=False, income_percentile=80, health_status="good"
+        gender="Male",
+        use_bayesian=True,
+        smoker=False,
+        income_percentile=80,
+        health_status="good",
     )
     enhanced_alive, enhanced_deaths = enhanced.simulate_survival(age, n_sims, n_years)
     enhanced_life_exp = np.mean(enhanced_deaths - age)
@@ -187,7 +198,11 @@ def compare_mortality_approaches():
 
     # Enhanced with poor health, smoker
     poor_health = EnhancedMortality(
-        gender="Male", use_bayesian=True, smoker=True, income_percentile=25, health_status="poor"
+        gender="Male",
+        use_bayesian=True,
+        smoker=True,
+        income_percentile=25,
+        health_status="poor",
     )
     poor_alive, poor_deaths = poor_health.simulate_survival(age, n_sims, n_years)
     poor_life_exp = np.mean(poor_deaths - age)

@@ -128,10 +128,14 @@ class TestTaxCalculator:
         }
 
         # Test SINGLE
-        single_result = tax_calculator.calculate_single_tax(**income_params, filing_status="SINGLE")
+        single_result = tax_calculator.calculate_single_tax(
+            **income_params, filing_status="SINGLE"
+        )
 
         # Test JOINT (if supported)
-        joint_result = tax_calculator.calculate_single_tax(**income_params, filing_status="JOINT")
+        joint_result = tax_calculator.calculate_single_tax(
+            **income_params, filing_status="JOINT"
+        )
 
         # Joint filers typically have lower tax rates
         # (though this depends on the mock implementation)
@@ -164,13 +168,19 @@ class TestTaxCalculator:
             # California (high tax state)
             ca_calc = TaxCalculator(state="CA", year=2025)
             ca_result = ca_calc.calculate_single_tax(
-                capital_gains=50_000, social_security=24_000, age=67, filing_status="SINGLE"
+                capital_gains=50_000,
+                social_security=24_000,
+                age=67,
+                filing_status="SINGLE",
             )
 
             # Texas (no state income tax)
             tx_calc = TaxCalculator(state="TX", year=2025)
             tx_result = tx_calc.calculate_single_tax(
-                capital_gains=50_000, social_security=24_000, age=67, filing_status="SINGLE"
+                capital_gains=50_000,
+                social_security=24_000,
+                age=67,
+                filing_status="SINGLE",
             )
 
             # Both should calculate

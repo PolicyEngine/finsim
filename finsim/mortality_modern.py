@@ -29,11 +29,15 @@ class MortalityAssumptions:
     """
 
     # Health/lifestyle factors
-    health_status: Literal["excellent", "good", "average", "below_average", "poor"] = "average"
+    health_status: Literal["excellent", "good", "average", "below_average", "poor"] = (
+        "average"
+    )
     smoker: bool = False
 
     # Socioeconomic factors
-    education: Literal["high_school", "some_college", "bachelors", "graduate"] = "bachelors"
+    education: Literal["high_school", "some_college", "bachelors", "graduate"] = (
+        "bachelors"
+    )
     income_percentile: int = 50  # 1-99
 
     # Medical advances assumption
@@ -106,7 +110,9 @@ class PracticalMortalityModel:
     """
 
     def __init__(
-        self, gender: Literal["male", "female"], assumptions: MortalityAssumptions | None = None
+        self,
+        gender: Literal["male", "female"],
+        assumptions: MortalityAssumptions | None = None,
     ):
         """Initialize mortality model.
 
@@ -225,7 +231,9 @@ class PracticalMortalityModel:
 
         return death_ages
 
-    def survival_curve(self, current_age: int, max_age: int = 120) -> tuple[np.ndarray, np.ndarray]:
+    def survival_curve(
+        self, current_age: int, max_age: int = 120
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Get expected survival curve.
 
         Args:

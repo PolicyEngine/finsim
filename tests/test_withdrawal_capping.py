@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+
 from finsim.portfolio_simulation import simulate_portfolio
 
 
@@ -25,26 +26,32 @@ def test_withdrawals_should_not_exceed_portfolio():
         "state": "CA",
         "has_annuity": False,
     }
-    
+
     np.random.seed(42)
     results = simulate_portfolio(**params)
-    
+
     portfolio_paths = results["portfolio_paths"]
     gross_withdrawals = results["gross_withdrawals"]
-    
+
     # Check each year
     for year in range(params["n_years"]):
         portfolio_at_start = portfolio_paths[:, year]
-        withdrawal = gross_withdrawals[:, year] if year < gross_withdrawals.shape[1] else 0
-        
+        withdrawal = (
+            gross_withdrawals[:, year] if year < gross_withdrawals.shape[1] else 0
+        )
+
         # Withdrawals should never exceed portfolio
         # This test will FAIL with current implementation
-        over_withdrawals = withdrawal > portfolio_at_start + 0.01  # Small tolerance for rounding
-        
+        over_withdrawals = (
+            withdrawal > portfolio_at_start + 0.01
+        )  # Small tolerance for rounding
+
         if np.any(over_withdrawals):
-            over_withdraw_amount = withdrawal[over_withdrawals] - portfolio_at_start[over_withdrawals]
+            over_withdraw_amount = (
+                withdrawal[over_withdrawals] - portfolio_at_start[over_withdrawals]
+            )
             max_over = np.max(over_withdraw_amount)
-            
+
             pytest.fail(
                 f"Year {year+1}: {np.sum(over_withdrawals)} simulations withdrew more than available.\n"
                 f"Max over-withdrawal: ${max_over:,.0f}\n"
@@ -73,26 +80,29 @@ def test_consumption_adjustment_when_broke():
         "state": "CA",
         "has_annuity": False,
     }
-    
+
     np.random.seed(42)
     results = simulate_portfolio(**params)
-    
+
     # After portfolio depletes, withdrawal should be 0
     # and household lives on SS + pension only
     portfolio = results["portfolio_paths"][0]
     withdrawals = results["gross_withdrawals"][0]
-    
+
     # Find when portfolio hits 0
     zero_year = np.where(portfolio == 0)[0]
     if len(zero_year) > 0:
         first_zero = zero_year[0]
-        
+
         # After depletion, withdrawals should be 0
         for year in range(first_zero, len(withdrawals)):
-            assert withdrawals[year] == 0, \
-                f"Year {year+1}: Withdrawal should be 0 when broke, but was ${withdrawals[year]:,.0f}"
-        
-        print(f"✓ Correctly stops withdrawing after portfolio depletes in year {first_zero}")
+            assert (
+                withdrawals[year] == 0
+            ), f"Year {year+1}: Withdrawal should be 0 when broke, but was ${withdrawals[year]:,.0f}"
+
+        print(
+            f"✓ Correctly stops withdrawing after portfolio depletes in year {first_zero}"
+        )
 
 
 def test_final_year_withdrawal_cap():
@@ -115,19 +125,19 @@ def test_final_year_withdrawal_cap():
         "state": "CA",
         "has_annuity": False,
     }
-    
+
     np.random.seed(42)
     results = simulate_portfolio(**params)
-    
+
     # In any year, if portfolio < withdrawal need, should only withdraw what's available
     portfolio_paths = results["portfolio_paths"]
     gross_withdrawals = results["gross_withdrawals"]
-    
+
     for sim in range(params["n_simulations"]):
         for year in range(params["n_years"] - 1):
             portfolio = portfolio_paths[sim, year]
             withdrawal = gross_withdrawals[sim, year]
-            
+
             if portfolio > 0 and withdrawal > portfolio:
                 pytest.fail(
                     f"Sim {sim}, Year {year+1}: Withdrew ${withdrawal:,.0f} "
